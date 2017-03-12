@@ -19,6 +19,7 @@ using PoGo.NecroBot.Logic.Model.Settings;
 using TinyIoC;
 using PokemonGo.RocketAPI.Util;
 using POGOProtos.Inventory.Item;
+using System.Device.Location;
 
 #endregion
 
@@ -26,6 +27,9 @@ namespace PoGo.NecroBot.Logic.Tasks
 {
     public class UseNearbyPokestopsTask
     {
+        //add delegate
+        public delegate void LootPokestopDelegate(FortData pokestop);
+
         private static int _stopsHit;
         private static int _randomStop;
         private static Random _rc; //initialize pokestop random cleanup counter first time
@@ -390,7 +394,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             var distance = LocationUtils.CalculateDistanceInMeters(pokeStop.Latitude, pokeStop.Longitude, session.Client.CurrentLatitude, session.Client.CurrentLongitude);
             if (distance > 30)
             {
-                LocationUtils.UpdatePlayerLocationWithAltitude(session, new GeoCoordinatePortable.GeoCoordinate(pokeStop.Latitude, pokeStop.Longitude), 0);
+                LocationUtils.UpdatePlayerLocationWithAltitude(session, new GeoCoordinate(pokeStop.Latitude, pokeStop.Longitude), 0);
                 await session.Client.Misc.RandomAPICall();
             }
 
@@ -418,7 +422,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                         latitude += 0.000003;
                         longitude += 0.000005;
-                        LocationUtils.UpdatePlayerLocationWithAltitude(session, new GeoCoordinatePortable.GeoCoordinate(latitude, longitude), 0);
+                        LocationUtils.UpdatePlayerLocationWithAltitude(session, new GeoCoordinate(latitude, longitude), 0);
                         retry--;
                     }
                 }
@@ -520,6 +524,10 @@ namespace PoGo.NecroBot.Logic.Tasks
                         session.Stats.AddPokestopTimestamp(DateTime.Now.Ticks);
                         session.EventDispatcher.Send(new PokestopLimitUpdate(session.Stats.GetNumPokestopsInLast24Hours(), session.LogicSettings.PokeStopLimit));
                     }
+                    //add pokeStops to Map
+                    OnLootPokestopEvent(pokeStop);
+                    //end pokeStop to Map
+
                     break; //Continue with program as loot was succesfull.
                 }
             } while (fortTry < retryNumber - zeroCheck);
@@ -645,5 +653,11 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             return pokeStops.ToList();
         }
+		        //add delegate event
+        private static void OnLootPokestopEvent(FortData pokestop)
+        {
+            LootPokestopEvent?.Invoke(pokestop);
+        }
+        public static event LootPokestopDelegate LootPokestopEvent;
     }
 }

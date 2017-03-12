@@ -10,11 +10,15 @@ using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Utils;
 using POGOProtos.Map.Pokemon;
 using POGOProtos.Networking.Responses;
+using System.Collections.Generic;
 
 #endregion
 
 namespace PoGo.NecroBot.Logic.Tasks
 {
+    //add delegate
+    public delegate void PokemonsEncounterDelegate(List<MapPokemon> pokemons);
+
     public static class CatchIncensePokemonsTask
     {
         public static async Task Execute(ISession session, CancellationToken cancellationToken)
@@ -41,10 +45,15 @@ namespace PoGo.NecroBot.Logic.Tasks
                     PokemonId = incensePokemon.PokemonId,
                     SpawnPointId = incensePokemon.EncounterLocation
                 };
+
+                //add delegate function
+                OnPokemonEncounterEvent(new List<MapPokemon> { pokemon });
+
                 if (session.Cache.Get(incensePokemon.EncounterId.ToString()) != null)
                     return; //pokemon been ignore before
 
-                if ((session.LogicSettings.UsePokemonToNotCatchFilter && session.LogicSettings.PokemonsNotToCatch.Contains(pokemon.PokemonId)))
+                if ((session.LogicSettings.UsePokemonToCatchLocallyListOnly && !session.LogicSettings.PokemonToCatchLocally.Pokemon.Contains(pokemon.PokemonId))
+                    || (session.LogicSettings.UsePokemonToNotCatchFilter && session.LogicSettings.PokemonsNotToCatch.Contains(pokemon.PokemonId)))
                 {
                     Logger.Write(session.Translation.GetTranslation(TranslationString.PokemonIgnoreFilter,
                         session.Translation.GetPokemonTranslation(pokemon.PokemonId)));
@@ -103,6 +112,13 @@ namespace PoGo.NecroBot.Logic.Tasks
                     }
                 }
             }
+        }
+        //add delegate event
+        public static event PokemonsEncounterDelegate PokemonEncounterEvent;
+
+        private static void OnPokemonEncounterEvent(List<MapPokemon> pokemons)
+        {
+            PokemonEncounterEvent?.Invoke(pokemons);
         }
     }
 }

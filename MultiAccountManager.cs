@@ -84,7 +84,7 @@ namespace PoGo.NecroBot.Logic
         {
             MigrateDatabase();
             LoadDataFromDB();
-            SyncDatabase(accounts, true /* remove missing accounts */);
+            SyncDatabase(accounts);
         }
 
         public BotAccount GetCurrentAccount()
@@ -190,7 +190,7 @@ namespace PoGo.NecroBot.Logic
             }
         }
 
-        private void SyncDatabase(List<AuthConfig> accounts, bool removeMissingAccounts)
+        private void SyncDatabase(List<AuthConfig> accounts)
         {
             if (accounts.Count() == 0)
                 return;
@@ -226,45 +226,40 @@ namespace PoGo.NecroBot.Logic
                     }
                 }
 
-                if (removeMissingAccounts)
+                // Remove accounts that are not in the auth.json but in the database.
+                List<BotAccount> accountsToRemove = new List<BotAccount>();
+                foreach (var item in this.Accounts)
                 {
-                    // Remove accounts that are not in the auth.json but in the database.
-                    List<BotAccount> accountsToRemove = new List<BotAccount>();
-                    foreach (var item in this.Accounts)
+                    var existing = accounts.FirstOrDefault(x => x.Username == item.Username && x.AuthType == item.AuthType);
+                    if (existing == null)
                     {
-                        var existing = accounts.FirstOrDefault(x => x.Username == item.Username && x.AuthType == item.AuthType);
-                        if (existing == null)
-                        {
-                            accountsToRemove.Add(item);
-                        }
+                        accountsToRemove.Add(item);
                     }
+                }
 
-                    foreach (var item in accountsToRemove)
-                    {
-                        this.Accounts.Remove(item);
-                        accountdb.Delete(item.Id);
-                    }
+                foreach (var item in accountsToRemove)
+                {
+                    this.Accounts.Remove(item);
+                    accountdb.Delete(item.Id);
                 }
             }
         }
 
-        internal BotAccount GetMinRuntime(bool ignoreBlockCheck= false)
+        internal BotAccount GetMinRuntime(bool ignoreBlockCheck = false)
         {
             return this.Accounts.OrderBy(x => x.RuntimeTotal).Where(x => !ignoreBlockCheck || x.ReleaseBlockTime < DateTime.Now).FirstOrDefault();
         }
 
-        public BotAccount Add(AuthConfig authConfig)
+        public bool AllowMultipleBot()
         {
-            SyncDatabase(new List<AuthConfig>() { authConfig }, false /* don't remove missing accounts */);
-
-            return this.Accounts.Last();
+            return this.Accounts.Count > 1;
         }
 
         public BotAccount GetStartUpAccount()
         {
             ISession session = TinyIoC.TinyIoCContainer.Current.Resolve<ISession>();
 
-            if (!session.LogicSettings.AllowMultipleBot)
+            if (!AllowMultipleBot())
             {
                 runningAccount = Accounts.Last();
             }
@@ -273,7 +268,7 @@ namespace PoGo.NecroBot.Logic
                 runningAccount = GetMinRuntime(true);
             }
 
-            if (session.LogicSettings.AllowMultipleBot
+            if (AllowMultipleBot()
               && session.LogicSettings.MultipleBotConfig.SelectAccountOnStartUp)
             {
                 SelectAccountForm f = new SelectAccountForm();

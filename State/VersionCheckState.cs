@@ -18,6 +18,7 @@ using PoGo.NecroBot.Logic.Event.UI;
 using PoGo.NecroBot.Logic.Logging;
 using PoGo.NecroBot.Logic.Utils;
 using PoGo.NecroBot.Logic.Forms;
+using System.Net.Http;
 
 #endregion
 
@@ -78,7 +79,7 @@ namespace PoGo.NecroBot.Logic.State
             var tempPath = Path.Combine(baseDir, "tmp");
             var extractedDir = Path.Combine(tempPath, "NecroBot2");
             var destinationDir = baseDir + Path.DirectorySeparatorChar;
-             bool updated = false;
+            bool updated = false;
             AutoUpdateForm autoUpdateForm = new AutoUpdateForm()
             {
                 Session = session,
@@ -150,11 +151,12 @@ namespace PoGo.NecroBot.Logic.State
 
        
 
-        private static string DownloadServerVersion()
+        private static  string DownloadServerVersion()
         {
-            using (var wC = new NecroWebClient())
+            using (HttpClient client = new HttpClient())
             {
-                return wC.DownloadString(VersionUri);
+                var responseContent = client.GetAsync(VersionUri).Result;
+                return responseContent.Content.ReadAsStringAsync().Result;
             }
         }
 

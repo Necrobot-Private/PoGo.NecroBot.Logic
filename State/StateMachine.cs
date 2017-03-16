@@ -49,6 +49,8 @@ namespace PoGo.NecroBot.Logic.State
 
         public async Task Start(IState initialState, ISession session, string subPath, bool excelConfigAllowed = false)
         {
+            var manager = TinyIoCContainer.Current.Resolve<MultiAccountManager>();
+
             GlobalSettings globalSettings = null;
 
             var state = initialState;
@@ -136,13 +138,13 @@ namespace PoGo.NecroBot.Logic.State
                 {
                     session.EventDispatcher.Send(new ErrorEvent() {Message = "Unexpected error happen, bot will re-login"});
 
-                    if (session.LogicSettings.AllowMultipleBot)
+                    if (manager.AllowMultipleBot())
                         ReInitializeSession(session, globalSettings);
                     state = new LoginState();
                 }
                 catch (AccountNotVerifiedException)
                 {
-                    if (session.LogicSettings.AllowMultipleBot)
+                    if (manager.AllowMultipleBot())
                     {
                         ReInitializeSession(session, globalSettings);
                         state = new LoginState();
@@ -218,7 +220,7 @@ namespace PoGo.NecroBot.Logic.State
                 {
                     session.EventDispatcher.Send(new ErrorEvent { Message = $"Niantic Servers unstable, throttling API Calls. {e.Message}" });
                     await Delay(1000);
-                    if (session.LogicSettings.AllowMultipleBot)
+                    if (manager.AllowMultipleBot())
                     {
                         apiCallFailured++;
                         if (apiCallFailured > 20)
@@ -235,7 +237,7 @@ namespace PoGo.NecroBot.Logic.State
                 {
                     session.EventDispatcher.Send(new ErrorEvent { Message = $"Hashing Servers errors, throttling calls. {e.Message}" });
                     await Delay(1000);
-                    if (session.LogicSettings.AllowMultipleBot)
+                    if (manager.AllowMultipleBot())
                     {
                         apiCallFailured++;
                         if (apiCallFailured > 3)
@@ -255,7 +257,7 @@ namespace PoGo.NecroBot.Logic.State
                 catch (OperationCanceledException)
                 {
                     session.EventDispatcher.Send(new ErrorEvent {Message = "Current Operation was canceled."});
-                    if (session.LogicSettings.AllowMultipleBot)
+                    if (manager.AllowMultipleBot())
                     {
                         TinyIoCContainer.Current.Resolve<MultiAccountManager>().BlockCurrentBot(30);
                         ReInitializeSession(session, globalSettings);
@@ -268,7 +270,7 @@ namespace PoGo.NecroBot.Logic.State
                     SendNotification(session, $"PTC Login failed!!!! {session.Settings.Username}", session.Translation.GetTranslation(TranslationString.PtcLoginFail), true);
                     #pragma warning restore 4014
 
-                    if (session.LogicSettings.AllowMultipleBot)
+                    if (manager.AllowMultipleBot())
                     {
                         TinyIoCContainer.Current.Resolve<MultiAccountManager>().BlockCurrentBot(60); //need remove acc
                         ReInitializeSession(session, globalSettings);
@@ -291,7 +293,7 @@ namespace PoGo.NecroBot.Logic.State
                     SendNotification(session, $"Banned!!!! {session.Settings.Username}", session.Translation.GetTranslation(TranslationString.AccountBanned), true);
                     #pragma warning restore 4014
 
-                    if (session.LogicSettings.AllowMultipleBot)
+                    if (manager.AllowMultipleBot())
                     {
                         TinyIoCContainer.Current.Resolve<MultiAccountManager>().BlockCurrentBot(24 * 60); //need remove acc
                         ReInitializeSession(session, globalSettings);
@@ -319,7 +321,7 @@ namespace PoGo.NecroBot.Logic.State
                 {
                     session.EventDispatcher.Send(new ErrorEvent() {Message = ex.Message});
 
-                    if (session.LogicSettings.AllowMultipleBot)
+                    if (manager.AllowMultipleBot())
                         ReInitializeSession(session, globalSettings);
                     state = new LoginState();
                 }
@@ -353,7 +355,7 @@ namespace PoGo.NecroBot.Logic.State
                         await SendNotification(session, $"Captcha required {session.Settings.Username}", session.Translation.GetTranslation(TranslationString.CaptchaShown), true);
                         session.EventDispatcher.Send(new WarnEvent { Message = session.Translation.GetTranslation(TranslationString.CaptchaShown) });
                         Logger.Debug("Captcha not resolved");
-                        if (session.LogicSettings.AllowMultipleBot)
+                        if (manager.AllowMultipleBot())
                         {
                             Logger.Debug("Change account");
                             TinyIoCContainer.Current.Resolve<MultiAccountManager>().BlockCurrentBot(15);

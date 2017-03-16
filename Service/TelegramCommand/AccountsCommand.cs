@@ -30,10 +30,9 @@ namespace PoGo.NecroBot.Logic.Service.TelegramCommand
                 return false;
             }
 
-            if (session.LogicSettings.AllowMultipleBot)
+            var manager = TinyIoCContainer.Current.Resolve<MultiAccountManager>();
+            if (manager.AllowMultipleBot())
             {
-                var manager = TinyIoCContainer.Current.Resolve<MultiAccountManager>();
-
                 foreach (var item in manager.Accounts)
                 {
                     message = message +

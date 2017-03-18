@@ -1,6 +1,6 @@
 ﻿using System;
-using Caching;
 using PoGo.NecroBot.Logic.Model.Settings;
+using System.Threading.Tasks;
 
 namespace PoGo.NecroBot.Logic.Service.Elevation
 {
@@ -10,7 +10,7 @@ namespace PoGo.NecroBot.Logic.Service.Elevation
         private double maxElevation = 50;
         private Random rand = new Random();
 
-        public RandomElevationService(GlobalSettings settings, LRUCache<string, double> cache) : base(settings, cache)
+        public RandomElevationService(GlobalSettings settings) : base(settings)
         {
         }
 
@@ -19,9 +19,12 @@ namespace PoGo.NecroBot.Logic.Service.Elevation
             return "Random Elevation Service (Necrobot Default)";
         }
 
-        public override double GetElevationFromWebService(double lat, double lng)
+// jjskuld - Ignore CS1998 warning for now.
+#pragma warning disable 1998
+        public override async Task<double> GetElevationFromWebService(double lat, double lng)
         {
             return rand.NextDouble() * (maxElevation - minElevation) + minElevation;
         }
+#pragma warning restore 1998
     }
 }

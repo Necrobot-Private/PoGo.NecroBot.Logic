@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PoGo.NecroBot.Logic</RootNamespace>
     <AssemblyName>PoGo.NecroBot.Logic</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
     <NuGetPackageImportStamp>
@@ -86,7 +86,7 @@
       <HintPath>$(SolutionDir)\packages\AeroWizard.2.1.9\lib\net452\AeroWizard.dll</HintPath>
       <Private>True</Private>
     </Reference>
-   <Reference Include="crypto, Version=1.8.1.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
+    <Reference Include="crypto, Version=1.8.1.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
       <HintPath>$(SolutionDir)\packages\Portable.BouncyCastle.1.8.1.1\lib\netstandard1.0\crypto.dll</HintPath>
       <Private>True</Private>
     </Reference>
@@ -106,10 +106,6 @@
       <HintPath>$(SolutionDir)\packages\Geocoding.net.3.6.0\lib\net40\Geocoding.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="GeoCoordinate.NetStandard1, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\GeoCoordinate.NetStandard1.1.0.0\lib\netstandard1.0\GeoCoordinate.NetStandard1.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Google.Protobuf, Version=3.2.0.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
       <HintPath>$(SolutionDir)\packages\Google.Protobuf.3.2.0\lib\net45\Google.Protobuf.dll</HintPath>
       <Private>True</Private>
@@ -120,10 +116,6 @@
     </Reference>
     <Reference Include="LiteDB, Version=2.0.4.0, Culture=neutral, PublicKeyToken=4ee40123013c9f27, processorArchitecture=MSIL">
       <HintPath>$(SolutionDir)\packages\LiteDB.2.0.4\lib\net35\LiteDB.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="LRUCache, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\LRUCache.0.1.0\lib\Net20\LRUCache.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Client, Version=2.2.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -156,10 +148,6 @@
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Device" />
-    <Reference Include="System.Diagnostics.DiagnosticSource, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\System.Diagnostics.DiagnosticSource.4.0.0\lib\portable-net45+win8+wpa81\System.Diagnostics.DiagnosticSource.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem">
@@ -230,6 +218,7 @@
     <Compile Include="Event\FortTargetEvent.cs" />
     <Compile Include="Event\FortFailedEvent.cs" />
     <Compile Include="Event\FortUsedEvent.cs" />
+    <Compile Include="Event\GetHumanizeRouteEvent.cs" />
     <Compile Include="Event\Gym\GymBattleStarted.cs" />
     <Compile Include="Event\Gym\GymDeployEvent.cs" />
     <Compile Include="Event\Gym\GymDetailInfoEvent.cs" />
@@ -248,11 +237,13 @@
     <Compile Include="Event\ItemRecycledEvent.cs" />
     <Compile Include="Event\KillSwitchEvent.cs" />
     <Compile Include="Event\LogEvent.cs" />
+    <Compile Include="Event\LootPokestopEvent.cs" />
     <Compile Include="Event\NoPokeballEvent.cs" />
     <Compile Include="Event\Player\BuddyUpdateEvent.cs" />
     <Compile Include="Event\Player\LoggedEvent.cs" />
     <Compile Include="Event\Player\LoginEvent.cs" />
     <Compile Include="Event\Player\TargetLocationEvent.cs" />
+    <Compile Include="Event\PokemonsEncounterEvent.cs" />
     <Compile Include="Event\PokestopLimitUpdate.cs" />
     <Compile Include="Event\SnipePokemonFoundEvent.cs" />
     <Compile Include="Event\SnipeEvent.cs" />
@@ -320,6 +311,7 @@
     <Compile Include="Logging\LoggingStrings.cs" />
     <Compile Include="Model\BotActions.cs" />
     <Compile Include="Exceptions\ActiveSwitchByPokemonException.cs" />
+    <Compile Include="Model\ElevationLocation.cs" />
     <Compile Include="Model\GeoLocation.cs" />
     <Compile Include="Model\Google\GoogleObjects\Address_Components.cs" />
     <Compile Include="Model\Google\GoogleObjects\Bounds.cs" />
@@ -380,6 +372,7 @@
     <Compile Include="Model\Settings\ItemRecycleConfig.cs" />
     <Compile Include="Model\Settings\SnipeConfig.cs" />
     <Compile Include="Model\Settings\EvolveFilter.cs" />
+    <Compile Include="Model\Settings\CatchSettings.cs" />
     <Compile Include="Model\Settings\SoftBanConfig.cs" />
     <Compile Include="Model\Settings\TelegramConfig.cs" />
     <Compile Include="Model\Settings\TransferConfig.cs" />
@@ -412,7 +405,6 @@
     <Compile Include="Service\Elevation\RandomElevationService.cs" />
     <Compile Include="Service\GoogleDirectionsService.cs" />
     <Compile Include="Service\Elevation\GoogleElevationService.cs" />
-    <Compile Include="Service\Elevation\MapQuestElevationService.cs" />
     <Compile Include="Service\TelegramCommand\AccountsCommand.cs" />
     <Compile Include="Service\TelegramCommand\CommandLocation.cs" />
     <Compile Include="Service\TelegramCommand\CommandMessage.cs" />
@@ -535,9 +527,9 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Utils\PushNotificationClient.cs" />
+    <Compile Include="Utils\RouteOptimizeUtil.cs" />
     <Compile Include="Utils\Statistics.cs" />
     <Compile Include="Utils\StringUtils.cs" />
-    <Compile Include="Utils\WebClientExtensions.cs" />
     <Compile Include="Utils\WebUtils.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -562,11 +554,11 @@
     <None Include="Resources\msvc.cer" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)\FeroxRev\PokemonGo.RocketAPI.csproj">
+    <ProjectReference Include="..\FeroxRev\PokemonGo.RocketAPI.csproj">
       <Project>{05d2da44-1b8e-4cf7-94ed-4d52451cd095}</Project>
       <Name>PokemonGo.RocketAPI</Name>
     </ProjectReference>
-    <ProjectReference Include="$(SolutionDir)\POGOProtos\POGOProtos.csproj">
+    <ProjectReference Include="..\POGOProtos\POGOProtos.csproj">
       <Project>{a03a7bb2-4f0b-467b-84b2-9a76e6aae6fb}</Project>
       <Name>POGOProtos</Name>
     </ProjectReference>

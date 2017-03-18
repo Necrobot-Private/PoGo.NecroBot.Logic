@@ -174,10 +174,10 @@ namespace PoGo.NecroBot.Logic.State
             }
             Client = new Client(settings);
             // ferox wants us to set this manually
-            Inventory = new Inventory(this, Client, logicSettings, () =>
+            Inventory = new Inventory(this, Client, logicSettings, async () =>
             {
-                var candy = this.Inventory.GetPokemonFamilies().Result.ToList();
-                var pokemonSettings = this.Inventory.GetPokemonSettings().Result.ToList();
+                var candy = (await this.Inventory.GetPokemonFamilies().ConfigureAwait(false)).ToList();
+                var pokemonSettings = (await this.Inventory.GetPokemonSettings().ConfigureAwait(false)).ToList();
                 this.EventDispatcher.Send(new InventoryRefreshedEvent(null, pokemonSettings, candy));
             });
             Navigation = new Navigation(Client, logicSettings);
@@ -199,9 +199,8 @@ namespace PoGo.NecroBot.Logic.State
 
             var nextBot = manager.GetSwitchableAccount(bot);
 
-            this.Settings.AuthType = nextBot.AuthType;
-            this.Settings.Password = nextBot.Password;
-            this.Settings.Username = nextBot.Username;
+            this.GlobalSettings.Auth.CurrentAuthConfig = nextBot;
+            
             this.Settings.DefaultAltitude = att == 0 ? this.Client.CurrentAltitude : att;
             this.Settings.DefaultLatitude = lat == 0 ? this.Client.CurrentLatitude : lat;
             this.Settings.DefaultLongitude = lng == 0 ? this.Client.CurrentLongitude : lng;
@@ -257,7 +256,7 @@ namespace PoGo.NecroBot.Logic.State
                 if (botActions.Count == 0) return true;
                 ///implement logic of action dependent
                 waitTimes += 1000;
-                await Task.Delay(1000);
+                await Task.Delay(1000).ConfigureAwait(false);
             }
             return false; //timedout
         }

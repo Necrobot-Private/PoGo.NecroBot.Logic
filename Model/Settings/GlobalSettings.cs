@@ -123,6 +123,9 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         public List<PokemonId> PokemonsNotToTransfer = TransferConfig.PokemonsNotToTransferDefault();
 
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public CatchSettings PokemonToCatchLocally = CatchSettings.Default();
+
+        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Ignore)]
         public List<PokemonId> PokemonsToLevelUp = LevelUpConfig.PokemonsToLevelUpDefault();
 
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Ignore)]
@@ -159,13 +162,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
                 });
             }
 
-            if(allAcc.Count>0)
-            {
-                this.Auth.AuthConfig = allAcc.First();
-            }
-            this.Auth.Bots = allAcc.Skip(1).ToList();
-            if (this.Auth.Bots.Count > 0) this.Auth.AllowMultipleBot = true;
-
+            this.Auth.Bots = allAcc.ToList();
             string json = JsonConvert.SerializeObject(this.Auth, Formatting.Indented,new StringEnumConverter() { CamelCaseText = true });
 
             File.WriteAllText("config\\auth.json", json);
@@ -901,10 +898,10 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             switch (accountType)
             {
                 case "google":
-                    settings.Auth.AuthConfig.AuthType = AuthType.Google;
+                    settings.Auth.CurrentAuthConfig.AuthType = AuthType.Google;
                     break;
                 case "ptc":
-                    settings.Auth.AuthConfig.AuthType = AuthType.Ptc;
+                    settings.Auth.CurrentAuthConfig.AuthType = AuthType.Ptc;
                     break;
             }
 
@@ -922,7 +919,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
                 translator.GetTranslation(TranslationString.FirstStartSetupUsernamePrompt)
             );
 
-            settings.Auth.AuthConfig.Username = strInput;
+            settings.Auth.CurrentAuthConfig.Username = strInput;
             Logger.Write(translator.GetTranslation(TranslationString.FirstStartSetupUsernameConfirm, strInput));
 
             Logger.Write("", LogLevel.Info);
@@ -931,7 +928,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
                 translator.GetTranslation(TranslationString.FirstStartSetupPasswordPrompt)
             );
 
-            settings.Auth.AuthConfig.Password = strInput;
+            settings.Auth.CurrentAuthConfig.Password = strInput;
             Logger.Write(translator.GetTranslation(TranslationString.FirstStartSetupPasswordConfirm, strInput));
 
             Logger.Write(translator.GetTranslation(TranslationString.FirstStartAccountCompleted), LogLevel.Info);

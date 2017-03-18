@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using GeoCoordinatePortable;
 using PoGo.NecroBot.Logic.Model;
 using PoGo.NecroBot.Logic.Model.Mapzen;
 using PoGo.NecroBot.Logic.Service;
 using PoGo.NecroBot.Logic.State;
 using PokemonGo.RocketAPI;
-using POGOProtos.Networking.Responses;
+using System.Device.Location;
 
 namespace PoGo.NecroBot.Logic.Strategies.Walk
 {
@@ -44,14 +43,14 @@ namespace PoGo.NecroBot.Logic.Strategies.Walk
                     functionExecutedWhileWalking,
                     session,
                     cancellationToken
-                );
+                ).ConfigureAwait(false);
                 return;
             }
 
             base.OnStartWalking(session, targetLocation, mapzenWalk.Distance);
             List<GeoCoordinate> points = mapzenWalk.Waypoints;
             await DoWalk(points, session, functionExecutedWhileWalking, sourceLocation,
-                destinaionCoordinate, cancellationToken, walkSpeed);
+                destinaionCoordinate, cancellationToken, walkSpeed).ConfigureAwait(false);
         }
 
         private void GetMapzenInstance(ISession session)

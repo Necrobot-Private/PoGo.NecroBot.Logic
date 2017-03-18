@@ -150,7 +150,8 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         public int RenamePokemonActionDelay => GenRandom(_settings.PlayerConfig.RenamePokemonActionDelay);
         public bool UseNearActionRandom => _settings.PlayerConfig.UseNearActionRandom;
         public bool UsePokemonToNotCatchFilter => _settings.PokemonConfig.UsePokemonToNotCatchFilter;
-        public bool UsePokemonSniperFilterOnly => _settings.PokemonConfig.UsePokemonSniperFilterOnly;
+        public bool UsePokemonToCatchLocallyListOnly => _settings.PokemonConfig.UsePokemonToCatchLocallyListOnly;
+        public CatchSettings PokemonToCatchLocally => _settings.PokemonToCatchLocally;
         public int KeepMinDuplicatePokemon => _settings.PokemonConfig.KeepMinDuplicatePokemon;
         public bool PrioritizeIvOverCp => _settings.PokemonConfig.PrioritizeIvOverCp;
         public int MaxTravelDistanceInMeters => GenRandom(_settings.LocationConfig.MaxTravelDistanceInMeters);
@@ -270,7 +271,6 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         public bool UseTransferFilterToCatch => _settings.CustomCatchConfig.UseTransferFilterToCatch;
         public MultipleBotConfig MultipleBotConfig => _settings.MultipleBotConfig;
         public List<AuthConfig> Bots => _settings.Auth.Bots;
-        public bool AllowMultipleBot => _settings.Auth.AllowMultipleBot;
         public int MinIVForAutoSnipe => _settings.SnipeConfig.MinIVForAutoSnipe;
         public bool AutosnipeVerifiedOnly => _settings.SnipeConfig.AutosnipeVerifiedOnly;
         public int DefaultAutoSnipeCandy => _settings.SnipeConfig.DefaultAutoSnipeCandy;

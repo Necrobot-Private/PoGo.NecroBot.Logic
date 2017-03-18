@@ -3,15 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using GeoCoordinatePortable;
 using PoGo.NecroBot.Logic.Event;
 using PoGo.NecroBot.Logic.Interfaces.Configuration;
 using PoGo.NecroBot.Logic.Model;
 using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Utils;
 using PokemonGo.RocketAPI;
-using POGOProtos.Networking.Responses;
-using PoGo.NecroBot.Logic.Logging;
+using System.Device.Location;
 
 namespace PoGo.NecroBot.Logic.Strategies.Walk
 {
@@ -68,7 +66,7 @@ namespace PoGo.NecroBot.Logic.Strategies.Walk
         /// Cell phones Gps systems can't generate accurate GEO, the average best they can is 5 meter.
         /// http://gis.stackexchange.com/questions/43617/what-is-the-maximum-theoretical-accuracy-of-gps
         /// </summary>
-        public GeoCoordinate GenerateUnaccurateGeocoordinate(GeoCoordinate geo, double nextWaypointBearing)
+        public async Task<GeoCoordinate> GenerateUnaccurateGeocoordinate(GeoCoordinate geo, double nextWaypointBearing)
         {
             var minBearing = Convert.ToInt32(nextWaypointBearing - 40);
             minBearing = minBearing > 0 ? minBearing : minBearing * -1;
@@ -83,7 +81,7 @@ namespace PoGo.NecroBot.Logic.Strategies.Walk
 
             var randomDistance = _randWalking.NextDouble() * 3;
 
-            return LocationUtils.CreateWaypoint(geo, randomDistance, randomBearingDegrees);
+            return await LocationUtils.CreateWaypoint(geo, randomDistance, randomBearingDegrees).ConfigureAwait(false);
         }
 
         public Task RedirectToNextFallbackStrategy(ILogicSettings logicSettings,
@@ -148,14 +146,14 @@ namespace PoGo.NecroBot.Logic.Strategies.Walk
                 //particular steps are limited by minimal length, first step is calculated from the original speed per second (distance in 1s)
                 var nextStepDistance = Math.Max(RandomizeStepLength(_minStepLengthInMeters), speedInMetersPerSecond);
 
-                var waypoint = LocationUtils.CreateWaypoint(currentLocation, nextStepDistance, nextStepBearing);
+                var waypoint = await LocationUtils.CreateWaypoint(currentLocation, nextStepDistance, nextStepBearing).ConfigureAwait(false);
                 walkedPointsList.Add(waypoint);
 
                 var previousLocation =
                     currentLocation; //store the current location for comparison and correction purposes
                 var requestSendDateTime = DateTime.Now;
-                LocationUtils.UpdatePlayerLocationWithAltitude(session, waypoint,
-                        (float) speedInMetersPerSecond);
+                await LocationUtils.UpdatePlayerLocationWithAltitude(session, waypoint,
+                        (float) speedInMetersPerSecond).ConfigureAwait(false);
 
                 var realDistanceToTarget = LocationUtils.CalculateDistanceInMeters(currentLocation, targetLocation);
                 if (realDistanceToTarget < 2)
@@ -207,19 +205,19 @@ namespace PoGo.NecroBot.Logic.Strategies.Walk
                     int timeToWalk = (int)((nextStepDistance * 1000) / speedInMetersPerSecond);
                     //Logger.Debug($"nextStepDistance {nextStepDistance} need {timeToWalk} ms");
 
-                    waypoint = LocationUtils.CreateWaypoint(currentLocation, nextStepDistance, nextStepBearing);
+                    waypoint = await LocationUtils.CreateWaypoint(currentLocation, nextStepDistance, nextStepBearing).ConfigureAwait(false);
                     walkedPointsList.Add(waypoint);
 
                     //store the current location for comparison and correction purposes
                     previousLocation = currentLocation;
                     requestSendDateTime = DateTime.Now;
-                    LocationUtils.UpdatePlayerLocationWithAltitude(session, waypoint, (float) speedInMetersPerSecond);
+                    await LocationUtils.UpdatePlayerLocationWithAltitude(session, waypoint, (float) speedInMetersPerSecond).ConfigureAwait(false);
 
                     UpdatePositionEvent?.Invoke(session, waypoint.Latitude, waypoint.Longitude, _currentWalkingSpeed);
 
-                    await Task.Delay(timeToWalk); 
+                    await Task.Delay(timeToWalk).ConfigureAwait(false); 
                     if (functionExecutedWhileWalking != null)
-                        await functionExecutedWhileWalking(); // look for pokemon
+                        await functionExecutedWhileWalking().ConfigureAwait(false); // look for pokemon
                 } while (LocationUtils.CalculateDistanceInMeters(currentLocation, nextStep) >= 2);
 
                 UpdatePositionEvent?.Invoke(session, nextStep.Latitude, nextStep.Longitude, _currentWalkingSpeed);

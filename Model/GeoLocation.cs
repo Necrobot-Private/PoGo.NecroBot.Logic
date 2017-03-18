@@ -3,6 +3,7 @@ using Google.Common.Geometry;
 using LiteDB;
 using PoGo.NecroBot.Logic.Utils;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,7 +11,8 @@ namespace PoGo.NecroBot.Logic.Model
 {
     public class GeoLocation
     {
-        private const string DB_NAME = "Cache\\geolocations.db";
+        private const string CACHE_DIR = "Cache";
+        private const string DB_NAME = CACHE_DIR + "\\geolocations.db";
         private static AsyncLock DB_LOCK = new AsyncLock();
         private static int GEOCODING_MAX_RETRIES = 5;
         private static int GEOLOCATION_PRECISION = 3;
@@ -52,7 +54,7 @@ namespace PoGo.NecroBot.Logic.Model
         public async Task ReverseGeocode()
         {
             GoogleGeocoder geocoder = new GoogleGeocoder();
-            var addresses = await geocoder.ReverseGeocodeAsync(Latitude, Longitude);
+            var addresses = await geocoder.ReverseGeocodeAsync(Latitude, Longitude).ConfigureAwait(false);
             GoogleAddress addr = addresses.Where(a => !a.IsPartialMatch).FirstOrDefault();
 
             if (addr != null)
@@ -83,13 +85,18 @@ namespace PoGo.NecroBot.Logic.Model
         {
             var cellId = new S2CellId(capturedCellId);
             var latlng = cellId.ToLatLng();
-            return await FindOrUpdateInDatabase(latlng.LatDegrees, latlng.LngDegrees);
+            return await FindOrUpdateInDatabase(latlng.LatDegrees, latlng.LngDegrees).ConfigureAwait(false);
         }
 
         public static async Task<GeoLocation> FindOrUpdateInDatabase(double latitude, double longitude)
         {
-            using (await DB_LOCK.LockAsync())
+            using (await DB_LOCK.LockAsync().ConfigureAwait(false))
             {
+                if (!Directory.Exists(CACHE_DIR))
+                {
+                    Directory.CreateDirectory(CACHE_DIR);
+                }
+
                 using (var db = new LiteDatabase(DB_NAME))
                 {
                     db.GetCollection<GeoLocation>("locations").EnsureIndex(s => s.Id);
@@ -107,7 +114,7 @@ namespace PoGo.NecroBot.Logic.Model
                     {
                         try
                         {
-                            await geoLocation.ReverseGeocode();
+                            await geoLocation.ReverseGeocode().ConfigureAwait(false);
                             break;
                         }
                         catch (Exception)
@@ -116,7 +123,7 @@ namespace PoGo.NecroBot.Logic.Model
                                 return null;
 
                             // Just ignore exception and retry after delay
-                            await Task.Delay(i * 100);
+                            await Task.Delay(i * 100).ConfigureAwait(false);
                         }
                     }
 

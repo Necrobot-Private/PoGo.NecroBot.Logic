@@ -107,7 +107,7 @@ namespace PoGo.NecroBot.Logic
             cancellationToken.ThrowIfCancellationRequested();
             TinyIoC.TinyIoCContainer.Current.Resolve<MultiAccountManager>().ThrowIfSwitchAccountRequested();
 
-            //add routes to map
+            //add points to map
             var points = new List<GeoCoordinate>();
             var route = Route(session,
                 new GeoCoordinate(
@@ -121,7 +121,7 @@ namespace PoGo.NecroBot.Logic
 
             //get points to map
             OnGetHumanizeRouteEvent(points);
-            //end code add routes
+            //end code add points
 
             // If the stretegies become bigger, create a factory for easy management
 

@@ -1,25 +1,21 @@
 ﻿#region using directives
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using GeoCoordinatePortable;
+using Newtonsoft.Json.Linq;
 using PoGo.NecroBot.Logic.Event;
 using PoGo.NecroBot.Logic.Interfaces.Configuration;
 using PoGo.NecroBot.Logic.Model;
 using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Strategies.Walk;
 using PokemonGo.RocketAPI;
-using POGOProtos.Networking.Responses;
-using System.Device.Location;
-using POGOProtos.Map.Fort;
-using PoGo.NecroBot.Logic.Utils;
-using PokemonGo.RocketAPI.Extensions;
-using Newtonsoft.Json.Linq;
-using System.Net;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 #endregion
 

@@ -19,6 +19,7 @@ using PoGo.NecroBot.Logic.Logging;
 using PokemonGo.RocketAPI.Extensions;
 using PokemonGo.RocketAPI.Helpers;
 using System.Net.Http;
+using POGOProtos.Networking.Envelopes;
 
 #endregion
 
@@ -567,7 +568,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             }
         }
 
-        private void SetDevInfoByDeviceInfo(DeviceInfo deviceInfo)
+        private void SetDevInfoByDeviceInfo(Signature.Types.DeviceInfo deviceInfo)
         {
             DeviceConfig.AndroidBoardName = deviceInfo.AndroidBoardName;
             DeviceConfig.AndroidBootloader = deviceInfo.AndroidBootloader;

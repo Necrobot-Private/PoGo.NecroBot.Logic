@@ -24,6 +24,7 @@ using TinyIoC;
 using POGOProtos.Enums;
 using System.Collections.Generic;
 using PoGo.NecroBot.Logic;
+using PoGo.NecroBot.Logic.Logging;
 using System.Collections.ObjectModel;
 #endregion
 
@@ -429,8 +430,17 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                     if (caughtPokemonResponse.Status == CatchPokemonResponse.Types.CatchStatus.CatchSuccess)
                     {
-                        evt.Gender = (await session.Inventory.GetPokemons().ConfigureAwait(false)).First(x => x.Id == caughtPokemonResponse.CapturedPokemonId).PokemonDisplay.Gender.ToString();
 
+                        evt.Shiny = (await session.Inventory.GetPokemons().ConfigureAwait(false)).First(x => x.Id == caughtPokemonResponse.CapturedPokemonId).PokemonDisplay.Shiny ? "Yes" : "No";
+                        evt.Gender = (await session.Inventory.GetPokemons().ConfigureAwait(false)).First(x => x.Id == caughtPokemonResponse.CapturedPokemonId).PokemonDisplay.Gender.ToString();
+                        if (session.LogicSettings.AutoFavoriteShinyOnCatch)
+                        {
+                            if (evt.Shiny == "Yes")
+                            {
+                                await FavoritePokemonTask.Execute (session, encounteredPokemon.Id, true);
+                                Logger.Write($"Shiny {encounteredPokemon.Id} (Caught) has been auto-favorited.");
+                            }
+                        }
                         var totalExp = 0;
                         var totalStarDust = caughtPokemonResponse.CaptureAward.Stardust.Sum();
                         if (encounteredPokemon != null)

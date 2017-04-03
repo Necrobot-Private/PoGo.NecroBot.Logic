@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("PoGo.NecroBot.Logic")]
-[assembly: AssemblyCopyright("Copyright NecroBot-Private Team © 2016")]
+[assembly: AssemblyCopyright("Copyright NecroBot-Private Team © 2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -40,6 +40,6 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion1("1.0.0.134")]
 
 
-[assembly: AssemblyVersion("1.0.0.146")]
+[assembly: AssemblyVersion("1.0.0.147")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: AssemblyInformationalVersion("v1.0.0.146")]
+[assembly: AssemblyInformationalVersion("v1.0.0.147")]

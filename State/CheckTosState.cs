@@ -5,10 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Google.Protobuf.Collections;
-using PoGo.NecroBot.Logic.Common;
 using PoGo.NecroBot.Logic.Event;
 using PoGo.NecroBot.Logic.Forms;
-using PoGo.NecroBot.Logic.Model.Settings;
 using PoGo.NecroBot.Logic.Utils;
 using POGOProtos.Enums;
 using POGOProtos.Networking.Responses;
@@ -96,6 +94,17 @@ namespace PoGo.NecroBot.Logic.State
                     });
                 }
             }
+
+            if (session.LogicSettings.SkipFirstTimeTutorial)
+            {
+                session.EventDispatcher.Send(new NoticeEvent()
+                {
+                    Message = "Skipping the first time tutorial."
+                });
+
+                return new InfoState();
+            }
+
             if (!session.LogicSettings.AutoFinishTutorial)
             {
                 InitialTutorialForm form = new InitialTutorialForm(this, tutState, session);

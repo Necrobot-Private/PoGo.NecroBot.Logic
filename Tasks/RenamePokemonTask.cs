@@ -1,20 +1,15 @@
 ﻿#region using directives
 
 using System;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
-using PoGo.NecroBot.Logic.Common;
 using PoGo.NecroBot.Logic.Event;
 using PoGo.NecroBot.Logic.PoGoUtils;
 using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Utils;
 using POGOProtos.Networking.Responses;
-using System.Text.RegularExpressions;
 using PoGo.NecroBot.Logic.Logging;
 using System.Linq;
-using System.Collections.Generic;
-using POGOProtos.Data;
 
 #endregion
 
@@ -46,8 +41,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     session.Inventory.GetWeakPokemonToTransfer(
                         session.LogicSettings.PokemonsNotToTransfer,
                         session.LogicSettings.PokemonEvolveFilters,
-                        session.LogicSettings.KeepPokemonsThatCanEvolve,
-                        session.LogicSettings.PrioritizeIvOverCp).ConfigureAwait(false);
+                        session.LogicSettings.KeepPokemonsThatCanEvolve).ConfigureAwait(false);
 
                 pokemons = pokemons.Where(x => !weakPokemons.Any(p => p.Id == x.Id));
             }

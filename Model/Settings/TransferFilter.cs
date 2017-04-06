@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -20,19 +19,19 @@ namespace PoGo.NecroBot.Logic.Model.Settings
     {
         public TransferFilter()
         {
-            this.AffectToPokemons = new List<PokemonId>();
-            this.MovesOperator = "and";
-            this.KeepMinOperator = Operator.or.ToString();
-            this.Moves = new List<List<PokemonMove>>();
-            this.DeprecatedMoves = new List<PokemonMove>();
+            AffectToPokemons = new List<PokemonId>();
+            MovesOperator = "and";
+            KeepMinOperator = Operator.or.ToString();
+            Moves = new List<List<PokemonMove>>();
+            DeprecatedMoves = new List<PokemonMove>();
         }
 
         public TransferFilter(int keepMinCp, int keepMinLvl, bool useKeepMinLvl, float keepMinIvPercentage,
-            string keepMinOperator, int keepMinDuplicatePokemon,
+            string keepMinOperator, int keepMinDuplicatePokemon, int keepMaxDuplicatePokemon,
             List<List<PokemonMove>> moves = null, List<PokemonMove> deprecatedMoves = null, string movesOperator = "or",
             bool catchOnlyPokemonMeetTransferCriteria = false)
         {
-            this.AffectToPokemons = new List<PokemonId>();
+            AffectToPokemons = new List<PokemonId>();
             DoNotTransfer = false;
             AllowTransfer = true;
             KeepMinCp = keepMinCp;
@@ -40,6 +39,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             UseKeepMinLvl = useKeepMinLvl;
             KeepMinIvPercentage = keepMinIvPercentage;
             KeepMinDuplicatePokemon = keepMinDuplicatePokemon;
+            KeepMaxDuplicatePokemon = keepMaxDuplicatePokemon;
             KeepMinOperator = keepMinOperator;
             Moves = (moves == null && deprecatedMoves != null)
                 ? new List<List<PokemonMove>> {deprecatedMoves}
@@ -49,11 +49,11 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         }
 
         [JsonIgnore]
-        [NecrobotConfig(HiddenOnGui = true,IsPrimaryKey = true, Key = "Allow Transfer", Position = 1, Description = "If TRUE bot will transfer this type of pokemon when match with filter condition.")]
+        [NecrobotConfig(HiddenOnGui = true,IsPrimaryKey = true, Key = "Allow Transfer", Position = 1, Description = "If Enabled, bot will transfer this type of pokemon when matched with filter condition.")]
         public bool AllowTransfer { get; set; }
 
         [JsonIgnore]
-        [NecrobotConfig(Key = "Do Not Transfer", Position = 2, Description = "TRUE, Bot won't transfer this pokemon, FALSE , Bot will use other parameter to check.")]
+        [NecrobotConfig(Key = "Do Not Transfer", Position = 2, Description = "If Enabled, Bot won't transfer this pokemon. If Not, Bot will use other parameters to check.")]
         public bool DoNotTransfer { get; set; }
 
         [NecrobotConfig(Key = "KeepMinCp", Position = 3 , Description = "Pokemon with CP lower than this value will be transfered")]
@@ -85,36 +85,40 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 5)]
         public string KeepMinOperator { get; set; }
 
-        [NecrobotConfig(Key = "KeepMinDuplicatePokemon", Position = 8, Description = "Number of duplication pokemon to keep")]
+        [NecrobotConfig(Key = "KeepMinDuplicatePokemon", Position = 8, Description = "Min number of duplication pokemon to keep")]
         [DefaultValue(1)]
         [Range(0, 999)]
-        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate,
-             Order = 6)]
+        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 6)]
         public int KeepMinDuplicatePokemon { get; set; }
 
-        [NecrobotConfig(Key = "Moves", Position = 9,
-             Description = "Defined unwanted moves , pokemon has this move will be transfered")]
+        [NecrobotConfig(Key = "KeepMaxDuplicatePokemon", Position = 9, Description = "Max number of duplication pokemon to keep")]
+        [DefaultValue(1000)]
+        [Range(0, 100000)]
+        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 7)]
+        public int KeepMaxDuplicatePokemon { get; set; }
+
+        [NecrobotConfig(Key = "Moves", Position = 10, Description = "Defined unwanted moves, and pokemon that have this move will be transfered")]
         [DefaultValue(null)]
-        [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate, Order = 7)]
+        [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate, Order = 8)]
         public List<List<PokemonMove>> Moves { get; set; }
 
         [DefaultValue(null)]
-        [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate, Order = 8)]
+        [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate, Order = 9)]
         public List<PokemonMove> DeprecatedMoves { get; set; }
 
-        [NecrobotConfig(Key = "MovesOperator", Position = 10)]
+        [NecrobotConfig(Key = "MovesOperator", Position = 11)]
         [DefaultValue("and")]
         [EnumDataType(typeof(Operator))]
-        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 9)]
+        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 10)]
         public string MovesOperator { get; set; }
 
-        [NecrobotConfig(Key = "CatchOnlyPokemonMeetTransferCriteria", Position = 11, Description ="Turn on this option to set bot catch only good pokemon with not meet transfer condition.")]
+        [NecrobotConfig(Key = "CatchOnlyPokemonMeetTransferCriteria", Position = 12, Description ="Turn on this option to allow bot to catch only good pokemon with not meet transfer condition.")]
         [DefaultValue(false)]
-        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 10)]
+        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 11)]
         public bool CatchOnlyPokemonMeetTransferCriteria { get; set; }
 
-        [NecrobotConfig(Key = "AffectToPokemons", Position = 12, Description = "Define the list of pokemon which this setting will affects to")]
-        [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate, Order = 11)]
+        [NecrobotConfig(Key = "AffectToPokemons", Position = 13, Description = "Define the list of pokemon which this setting will affect")]
+        [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate, Order = 12)]
         public List<PokemonId> AffectToPokemons { get; set; }
 
         internal static Dictionary<PokemonId, TransferFilter> TransferFilterDefault()
@@ -122,34 +126,34 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             return new Dictionary<PokemonId, TransferFilter>
             {
 				//criteria: based on NY Central Park and Tokyo variety + sniping optimization
-				{PokemonId.Golduck, new TransferFilter(1800, 6, false, 95, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.WaterGunFast,PokemonMove.HydroPump }},null,"and")},
-                {PokemonId.Aerodactyl, new TransferFilter(1250, 6, false, 80, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.BiteFast,PokemonMove.HyperBeam }},null,"and")},
-                {PokemonId.Venusaur, new TransferFilter(1800, 6, false, 95, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.VineWhipFast,PokemonMove.SolarBeam }},null,"and")},
-                {PokemonId.Farfetchd, new TransferFilter(1250, 6, false, 80, "or", 1)},
-                {PokemonId.Krabby, new TransferFilter(1250, 6, false, 95, "or", 1)},
-                {PokemonId.Kangaskhan, new TransferFilter(1500, 6, false, 60, "or", 1)},
-                {PokemonId.Horsea, new TransferFilter(1250, 6, false, 95, "or", 1)},
-                {PokemonId.Staryu, new TransferFilter(1250, 6, false, 95, "or", 1)},
-                {PokemonId.MrMime, new TransferFilter(1250, 6, false, 40, "or", 1)},
-                {PokemonId.Scyther, new TransferFilter(1800, 6, false, 80, "or", 1)},
-                {PokemonId.Jynx, new TransferFilter(1250, 6, false, 95, "or", 1)},
-                {PokemonId.Charizard, new TransferFilter(1250, 6, false, 80, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.WingAttackFast,PokemonMove.FireBlast }},null,"and")},
-                {PokemonId.Electabuzz, new TransferFilter(1250, 6, false, 80, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.ThunderShockFast,PokemonMove.Thunder }},null,"and")},
-                {PokemonId.Magmar, new TransferFilter(1500, 6, false, 80, "or", 1)},
-                {PokemonId.Pinsir, new TransferFilter(1800, 6, false, 95, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.RockSmashFast,PokemonMove.XScissor }},null,"and")},
-                {PokemonId.Tauros, new TransferFilter(1250, 6, false, 90, "or", 1)},
-                {PokemonId.Magikarp, new TransferFilter(200, 6, false, 95, "or", 1)},
-                {PokemonId.Exeggutor, new TransferFilter(1800, 6, false, 90, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.ZenHeadbuttFast,PokemonMove.SolarBeam }},null,"and")},
-                {PokemonId.Gyarados, new TransferFilter(1250, 6, false, 90, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.DragonBreath,PokemonMove.HydroPump }},null,"and")},
-                {PokemonId.Lapras, new TransferFilter(1800, 6, false, 80, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.FrostBreathFast,PokemonMove.Blizzard }},null,"and")},
-                {PokemonId.Eevee, new TransferFilter(1250, 6, false, 95, "or", 1)},
-                {PokemonId.Vaporeon, new TransferFilter(1500, 6, false, 90, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.WaterGun,PokemonMove.HydroPump }},null,"and")},
-                {PokemonId.Jolteon, new TransferFilter(1500, 6, false, 90, "or", 1)},
-                {PokemonId.Flareon, new TransferFilter(1500, 6, false, 90, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.Ember,PokemonMove.FireBlast }},null,"and")},
-                {PokemonId.Porygon, new TransferFilter(1250, 6, false, 60, "or", 1)},
-                {PokemonId.Arcanine, new TransferFilter(1800, 6, false, 80, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.FireFangFast,PokemonMove.FireBlast }},null,"and")},
-                {PokemonId.Snorlax, new TransferFilter(2600, 6, false, 90, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.ZenHeadbuttFast,PokemonMove.HyperBeam }},null,"and")},
-                {PokemonId.Dragonite, new TransferFilter(2600, 6, false, 90, "or", 1,new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.DragonBreath,PokemonMove.DragonClaw }},null,"and")},
+				{PokemonId.Golduck, new TransferFilter(1800, 6, false, 95, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.WaterGunFast,PokemonMove.HydroPump }},null,"and")},
+                {PokemonId.Aerodactyl, new TransferFilter(1250, 6, false, 80, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.BiteFast,PokemonMove.HyperBeam }},null,"and")},
+                {PokemonId.Venusaur, new TransferFilter(1800, 6, false, 95, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.VineWhipFast,PokemonMove.SolarBeam }},null,"and")},
+                {PokemonId.Farfetchd, new TransferFilter(1250, 6, false, 80, "or", 1, 1000)},
+                {PokemonId.Krabby, new TransferFilter(1250, 6, false, 95, "or", 1, 1000)},
+                {PokemonId.Kangaskhan, new TransferFilter(1500, 6, false, 60, "or", 1, 1000)},
+                {PokemonId.Horsea, new TransferFilter(1250, 6, false, 95, "or", 1, 1000)},
+                {PokemonId.Staryu, new TransferFilter(1250, 6, false, 95, "or", 1, 1000)},
+                {PokemonId.MrMime, new TransferFilter(1250, 6, false, 40, "or", 1, 1000)},
+                {PokemonId.Scyther, new TransferFilter(1800, 6, false, 80, "or", 1, 1000)},
+                {PokemonId.Jynx, new TransferFilter(1250, 6, false, 95, "or", 1, 1000)},
+                {PokemonId.Charizard, new TransferFilter(1250, 6, false, 80, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.WingAttackFast,PokemonMove.FireBlast }},null,"and")},
+                {PokemonId.Electabuzz, new TransferFilter(1250, 6, false, 80, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.ThunderShockFast,PokemonMove.Thunder }},null,"and")},
+                {PokemonId.Magmar, new TransferFilter(1500, 6, false, 80, "or", 1, 1000)},
+                {PokemonId.Pinsir, new TransferFilter(1800, 6, false, 95, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.RockSmashFast,PokemonMove.XScissor }},null,"and")},
+                {PokemonId.Tauros, new TransferFilter(1250, 6, false, 90, "or", 1, 1000)},
+                {PokemonId.Magikarp, new TransferFilter(200, 6, false, 95, "or", 1, 1000)},
+                {PokemonId.Exeggutor, new TransferFilter(1800, 6, false, 90, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.ZenHeadbuttFast,PokemonMove.SolarBeam }},null,"and")},
+                {PokemonId.Gyarados, new TransferFilter(1250, 6, false, 90, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.DragonBreath,PokemonMove.HydroPump }},null,"and")},
+                {PokemonId.Lapras, new TransferFilter(1800, 6, false, 80, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.FrostBreathFast,PokemonMove.Blizzard }},null,"and")},
+                {PokemonId.Eevee, new TransferFilter(1250, 6, false, 95, "or", 1, 1000)},
+                {PokemonId.Vaporeon, new TransferFilter(1500, 6, false, 90, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.WaterGun,PokemonMove.HydroPump }},null,"and")},
+                {PokemonId.Jolteon, new TransferFilter(1500, 6, false, 90, "or", 1, 1000)},
+                {PokemonId.Flareon, new TransferFilter(1500, 6, false, 90, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.Ember,PokemonMove.FireBlast }},null,"and")},
+                {PokemonId.Porygon, new TransferFilter(1250, 6, false, 60, "or", 1, 1000)},
+                {PokemonId.Arcanine, new TransferFilter(1800, 6, false, 80, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.FireFangFast,PokemonMove.FireBlast }},null,"and")},
+                {PokemonId.Snorlax, new TransferFilter(2600, 6, false, 90, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.ZenHeadbuttFast,PokemonMove.HyperBeam }},null,"and")},
+                {PokemonId.Dragonite, new TransferFilter(2600, 6, false, 90, "or", 1, 1000, new List<List<PokemonMove>>() { new List<PokemonMove>() { PokemonMove.DragonBreath,PokemonMove.DragonClaw }},null,"and")},
             };
         }
 
@@ -159,7 +163,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             var _logicSettings = session.LogicSettings;
             return new TransferFilter(_logicSettings.KeepMinCp, _logicSettings.KeepMinLvl, _logicSettings.UseKeepMinLvl,
                 _logicSettings.KeepMinIvPercentage,
-                _logicSettings.KeepMinOperator, _logicSettings.KeepMinDuplicatePokemon);
+                _logicSettings.KeepMinOperator, _logicSettings.KeepMinDuplicatePokemon, _logicSettings.KeepMaxDuplicatePokemon);
         }
     }
 }

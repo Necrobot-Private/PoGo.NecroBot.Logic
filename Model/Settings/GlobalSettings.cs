@@ -162,8 +162,8 @@ namespace PoGo.NecroBot.Logic.Model.Settings
                 });
             }
 
-            this.Auth.Bots = allAcc.ToList();
-            string json = JsonConvert.SerializeObject(this.Auth, Formatting.Indented,new StringEnumConverter() { CamelCaseText = true });
+            Auth.Bots = allAcc.ToList();
+            string json = JsonConvert.SerializeObject(Auth, Formatting.Indented,new StringEnumConverter() { CamelCaseText = true });
 
             File.WriteAllText("config\\auth.json", json);
             if (File.Exists("accounts.db")) File.Delete("accounts.db");
@@ -681,6 +681,20 @@ namespace PoGo.NecroBot.Logic.Model.Settings
 
                         // But this time we are going to remove PokemonsToEvolve.
                         settings.Remove("PokemonsToEvolve");
+                        break;
+
+                    case 22:
+                        if (settings["PokemonsTransferFilter"] != null && settings["PokemonsTransferFilter"] != null)
+                        {
+                            foreach (var x in settings["PokemonsTransferFilter"])
+                            {
+                                var key = ((JProperty)(x)).Name;
+                                var filter = ((JProperty)(x)).Value;
+
+                                if (filter["KeepMaxDuplicatePokemon"] == null)
+                                    filter["KeepMaxDuplicatePokemon"] = 1000;
+                            }
+                        }
                         break;
                 }
             }

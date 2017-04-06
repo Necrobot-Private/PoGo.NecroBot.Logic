@@ -1,19 +1,9 @@
 ﻿#region using directives
 
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using PoGo.NecroBot.Logic.Common;
-using PoGo.NecroBot.Logic.Event;
-using PoGo.NecroBot.Logic.PoGoUtils;
 using PoGo.NecroBot.Logic.State;
-using PoGo.NecroBot.Logic.Utils;
-using POGOProtos.Data;
-using POGOProtos.Networking.Responses;
-using PoGo.NecroBot.Logic.Exceptions;
-using PoGo.NecroBot.Logic.Model.Settings;
-using System;
 
 #endregion
 
@@ -43,12 +33,9 @@ namespace PoGo.NecroBot.Logic.Tasks
                 session.Inventory.GetWeakPokemonToTransfer(
                     session.LogicSettings.PokemonsNotToTransfer,
                     session.LogicSettings.PokemonEvolveFilters,
-                    session.LogicSettings.KeepPokemonsThatCanEvolve,
-                    session.LogicSettings.PrioritizeIvOverCp).ConfigureAwait(false);
+                    session.LogicSettings.KeepPokemonsThatCanEvolve).ConfigureAwait(false);
 
-            var orderedPokemon = weakPokemon.OrderBy(poke => poke.Cp);
-
-            await Execute(session, orderedPokemon, cancellationToken).ConfigureAwait(false);
+            await Execute(session, weakPokemon, cancellationToken).ConfigureAwait(false);
 
             // Evolve after transfer.
             await EvolvePokemonTask.Execute(session, cancellationToken).ConfigureAwait(false);

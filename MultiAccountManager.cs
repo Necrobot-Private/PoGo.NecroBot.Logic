@@ -107,6 +107,7 @@ namespace PoGo.NecroBot.Logic
 
         private void LoadDataFromDB()
         {
+            LiteEngine.Upgrade(ACCOUNT_DB_NAME, null, true);
             using (var db = new LiteDatabase(ACCOUNT_DB_NAME))
             {
                 var accountdb = db.GetCollection<BotAccount>("accounts");
@@ -256,7 +257,7 @@ namespace PoGo.NecroBot.Logic
 
         public BotAccount GetStartUpAccount()
         {
-            ISession session = TinyIoC.TinyIoCContainer.Current.Resolve<ISession>();
+            ISession session = TinyIoCContainer.Current.Resolve<ISession>();
 
             if (!AllowMultipleBot())
             {

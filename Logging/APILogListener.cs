@@ -52,5 +52,6 @@ namespace PoGo.NecroBot.Logic.Logging
         {
             Logger.Write(message, LogLevel.Error);
         }
+
     }
 }

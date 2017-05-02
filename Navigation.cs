@@ -105,19 +105,18 @@ namespace PoGo.NecroBot.Logic
             TinyIoC.TinyIoCContainer.Current.Resolve<MultiAccountManager>().ThrowIfSwitchAccountRequested();
 
             //add points to map
-            var points = new List<GeoCoordinate>();
-            var route = Route(session,
-                new GeoCoordinate(
-                    _client.CurrentLatitude,
-                    _client.CurrentLongitude,
-                    _client.CurrentAltitude),
-                targetLocation.ToGeoCoordinate());
+            if (targetLocation != null)
+            {
+                var points = new List<GeoCoordinate>();
+                var startLocation = new GeoCoordinate( _client.CurrentLatitude, _client.CurrentLongitude, _client.CurrentAltitude);
+                var route = Route(session, startLocation, targetLocation.ToGeoCoordinate());
 
-            foreach (var item in route)
-                points.Add(new GeoCoordinate(item.ToArray()[1], item.ToArray()[0]));
+                foreach (var item in route)
+                    points.Add(new GeoCoordinate(item.ToArray()[1], item.ToArray()[0]));
 
-            //get points to map
-            OnGetHumanizeRouteEvent(points);
+                //get points to map
+                OnGetHumanizeRouteEvent(points);
+            }
             //end code add points
 
             // If the stretegies become bigger, create a factory for easy management
@@ -214,19 +213,10 @@ namespace PoGo.NecroBot.Logic
                 var parseObject = JObject.Parse(strResponse);
                 result = Points(parseObject["routes"][0]["overview_polyline"]["points"].ToString(), 1e5);
             }
-            catch (WebException e)
+            catch
             {
-                session.EventDispatcher.Send(new WarnEvent
-                {
-                    Message = $"Web Exception: {e.Message}"
-                });
-            }
-            catch (NullReferenceException e)
-            {
-                session.EventDispatcher.Send(new WarnEvent
-                {
-                    Message = $"Routing Error: {e.Message}"
-                });
+                Logging.Logger.Write("You have exceeded your daily request quota for this API or the provided API key is expired/invalid or not API actived.", Logging.LogLevel.Error, ConsoleColor.Red);
+                return result;
             }
 
             return result;

@@ -84,7 +84,7 @@ namespace PoGo.NecroBot.Logic.Service
             }
         }
 
-        public static void HandleEvent(AnalyticsEvent e, ISession session)
+        public static async Task HandleEvent(AnalyticsEvent e, ISession session)
         {
             Pokemon data = e.Data as Pokemon;
             switch (e.EventType)
@@ -116,7 +116,7 @@ namespace PoGo.NecroBot.Logic.Service
                             Enum.TryParse(encounteredEvent.Move1, true, out move1);
                             Enum.TryParse(encounteredEvent.Move2, true, out move2);
 
-                            var added = MSniperServiceTask.AddSnipeItem(session, new MSniperServiceTask.MSniperInfo2()
+                            var added = await MSniperServiceTask.AddSnipeItem(session, new MSniperServiceTask.MSniperInfo2()
                             {
                                 UniqueIdentifier = data.EncounterId,
                                 Latitude = data.Latitude,
@@ -129,7 +129,7 @@ namespace PoGo.NecroBot.Logic.Service
                                 Move1 = move1,
                                 Move2 = move2,
                                 ExpiredTime = data.ExpiredTime
-                            }).Result;
+                            }).ConfigureAwait(false);
 
                             if (added)
                             {
@@ -222,7 +222,7 @@ namespace PoGo.NecroBot.Logic.Service
             while (true && !termintated)
             {
                 var socketURL = servers.Dequeue();
-                Logger.Write($"Connecting to {socketURL} ....");
+                // Logger.Write($"Connecting to {socketURL} ....");
                 await ConnectToServer(session, socketURL, encryptKey);
                 servers.Enqueue(socketURL);
             }
@@ -253,11 +253,13 @@ namespace PoGo.NecroBot.Logic.Service
                     {
                         if (retries == 3)
                         {
-                            //failed to make connection to server  times contiuing, temporary stop for 10 mins.
+                            //failed to make connection to server  times continuing, temporary stop for 10 mins.
+                            /*
                             session.EventDispatcher.Send(new WarnEvent()
                             {
                                 Message = $"Couldn't establish the connection to necrobot socket server : {socketURL}"
                             });
+                            */
                             if (session.LogicSettings.DataSharingConfig.EnableFailoverDataServers && servers.Count > 1)
                             {
                                 break;
@@ -286,18 +288,22 @@ namespace PoGo.NecroBot.Logic.Service
                                 var actualMessage = JsonConvert.SerializeObject(message);
                                 ws.Send($"42[\"client-update\",{actualMessage}]");
                             }
-
+                            else
+                            {
+                                var pingMessage = JsonConvert.SerializeObject(new { Ping = DateTime.Now });
+                                ws.Send($"42[\"ping-server\",{pingMessage}");
+                            }
                             await Task.Delay(POLLING_INTERVAL);
-                            ws.Ping();
                         }
                     }
                     catch (IOException)
                     {
+                        /*
                         session.EventDispatcher.Send(new WarnEvent
                         {
                             Message = "Disconnected from necrobot socket. New connection will be established when service becomes available..."
                         });
-
+                        */
                     }
                     catch (Exception)
                     {
@@ -334,9 +340,6 @@ namespace PoGo.NecroBot.Logic.Service
             var match = Regex.Match(message, "42\\[\"server-message\",(.*)]");
             if (match != null && !string.IsNullOrEmpty(match.Groups[1].Value))
             {
-                if (message.Contains("The connection has been denied")) {
-                    termintated = true;
-                }
                 var messag = match.Groups[1].Value;
                 if (message.Contains("The connection has been denied") && lastWarningMessage > DateTime.Now.AddMinutes(-5)) return;
                 lastWarningMessage = DateTime.Now;
@@ -468,7 +471,7 @@ namespace PoGo.NecroBot.Logic.Service
                     session);
                 if (caught)
                 {
-                    Logger.Write("[SNIPE IGNORED] - Your snipe pokemon has already been cautgh by bot",
+                    Logger.Write("[SNIPE IGNORED] - Your snipe pokemon has already been caught by bot",
                         Logic.Logging.LogLevel.Sniper);
                     return;
                 }

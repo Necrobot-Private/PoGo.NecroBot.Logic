@@ -192,7 +192,7 @@ namespace PoGo.NecroBot.Logic
                 var liteDbAccounts = liteDb.GetCollection<BotAccount>("accounts");
                 foreach (var liteDbAccount in liteDbAccounts.FindAll())
                 {
-                    if (string.IsNullOrEmpty(liteDbAccount.Username) || string.IsNullOrEmpty(liteDbAccount.Password))
+                   if (string.IsNullOrEmpty(liteDbAccount.Username) || string.IsNullOrEmpty(liteDbAccount.Password))
                         continue;
 
                     Account newAccount = new Account();
@@ -230,6 +230,7 @@ namespace PoGo.NecroBot.Logic
                     continue;
 
                 var existing = _context.Account.FirstOrDefault(x => x.Username == authConfig.Username && x.AuthType == authConfig.AuthType);
+
 
                 if (existing == null)
                 {

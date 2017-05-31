@@ -107,8 +107,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             var greatBallsCount = allitems.FirstOrDefault(i => i.ItemId == ItemId.ItemGreatBall)?.Count;
             var ultraBallsCount = allitems.FirstOrDefault(i => i.ItemId == ItemId.ItemUltraBall)?.Count;
             var masterBallsCount = allitems.FirstOrDefault(i => i.ItemId == ItemId.ItemMasterBall)?.Count;
-            masterBallsCount =
-                masterBallsCount ?? 0; //return null ATM. need this code to logic check work
+            masterBallsCount = masterBallsCount ?? 0; //return null ATM. need this code to logic check work
             var PokeBalls = pokeBallsCount + greatBallsCount + ultraBallsCount + masterBallsCount;
 
             if (0 < pokemons.Count && PokeBalls >= session.LogicSettings.PokeballsToKeepForSnipe) // Don't display if not enough Pokeballs - TheWizrad1328
@@ -134,7 +133,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     continue; //this pokemon has been skipped because not meet with catch criteria before.
                 }
 
-                if (PokeBalls <
+                if (pokeBallsCount + greatBallsCount + ultraBallsCount + masterBallsCount <
                     session.LogicSettings.PokeballsToKeepForSnipe && session.CatchBlockTime < DateTime.Now)
                 {
                     session.CatchBlockTime = DateTime.Now.AddMinutes(session.LogicSettings.OutOfBallCatchBlockTime);

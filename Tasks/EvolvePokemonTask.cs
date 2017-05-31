@@ -1,4 +1,4 @@
-#region using directives
+﻿#region using directives
 
 using System;
 using System.Collections.Generic;
@@ -23,6 +23,8 @@ namespace PoGo.NecroBot.Logic.Tasks
 {
     public class EvolvePokemonTask
     {
+        private static DateTime _lastLuckyEggTime;
+
         public static async Task Execute(ISession session, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -86,7 +88,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     {
                         if (await ShouldUseLuckyEgg(session, pokemonToEvolve).ConfigureAwait(false))
                         {
-                            await session.Inventory.UseLuckyEgg().ConfigureAwait(false);
+                            await UseLuckyEgg(session).ConfigureAwait(false);
                         }
                         await Evolve(session, pokemonToEvolve).ConfigureAwait(false);
                     }
@@ -96,11 +98,37 @@ namespace PoGo.NecroBot.Logic.Tasks
                 {
                     if (await ShouldUseLuckyEgg(session, pokemonToEvolve).ConfigureAwait(false))
                     {
-                        await session.Inventory.UseLuckyEgg().ConfigureAwait(false);
+                        await UseLuckyEgg(session).ConfigureAwait(false);
                     }
                     await Evolve(session, pokemonToEvolve).ConfigureAwait(false);
                 }
             }
+        }
+
+        public static async Task UseLuckyEgg(ISession session)
+        {
+            var inventoryContent = await session.Inventory.GetItems().ConfigureAwait(false);
+
+            var luckyEgg = inventoryContent.FirstOrDefault(p => p.ItemId == ItemId.ItemLuckyEgg);
+
+            if (luckyEgg.Count == 0) // We tried to use egg but we don't have any more. Just return.
+                return;
+
+            if (_lastLuckyEggTime.AddMinutes(30).Ticks > DateTime.Now.Ticks)
+                return;
+
+            var responseLuckyEgg = await session.Client.Inventory.UseItemXpBoost().ConfigureAwait(false);
+            if (responseLuckyEgg.Result == UseItemXpBoostResponse.Types.Result.Success)
+            {
+                _lastLuckyEggTime = DateTime.Now;
+
+                // Get refreshed lucky egg so we have an accurate count.
+                luckyEgg = inventoryContent.FirstOrDefault(p => p.ItemId == ItemId.ItemLuckyEgg);
+
+                if (luckyEgg != null) session.EventDispatcher.Send(new UseLuckyEggEvent { Count = luckyEgg.Count });
+                TinyIoCContainer.Current.Resolve<MultiAccountManager>().DisableSwitchAccountUntil(DateTime.Now.AddMinutes(30));
+            }
+            await DelayingUtils.DelayAsync(session.LogicSettings.DelayBetweenPlayerActions, 0, session.CancellationTokenSource.Token).ConfigureAwait(false);
         }
 
         public static async Task<ItemId> GetRequireEvolveItem(ISession session, PokemonId from, PokemonId to)

@@ -29,8 +29,6 @@ namespace PoGo.NecroBot.Logic.Tasks
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            //await session.Inventory.RefreshCachedInventory().ConfigureAwait(false);
-
             var pokemonToEvolveTask = await session.Inventory
                 .GetPokemonToEvolve(session.LogicSettings.PokemonEvolveFilters).ConfigureAwait(false);
             var pokemonToEvolve = pokemonToEvolveTask.Where(p => p != null).ToList();
@@ -112,7 +110,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             var inventoryContent = await session.Inventory.GetItems().ConfigureAwait(false);
 
             var luckyEgg = inventoryContent.FirstOrDefault(p => p.ItemId == ItemId.ItemLuckyEgg);
-            
+
             if (luckyEgg.Count == 0) // We tried to use egg but we don't have any more. Just return.
                 return;
 
@@ -153,7 +151,9 @@ namespace PoGo.NecroBot.Logic.Tasks
                     try
                     {
                         // no cancellationToken.ThrowIfCancellationRequested here, otherwise the lucky egg would be wasted.
-                        var evolveResponse = await session.Client.Inventory.EvolvePokemon(pokemon.Id ,filter== null? ItemId.ItemUnknown: await GetRequireEvolveItem(session ,pokemon.PokemonId, filter.EvolveToPokemonId)).ConfigureAwait(false);
+                        var evolveResponse = await session.Client.Inventory.EvolvePokemon(pokemon.Id, filter == null ? ItemId.ItemUnknown : await GetRequireEvolveItem(session, pokemon.PokemonId, filter.EvolveToPokemonId)).ConfigureAwait(false);
+                        var CandyUsed = session.Inventory.GetCandyCount(pokemon.PokemonId);
+
                         if (evolveResponse.Result == EvolvePokemonResponse.Types.Result.Success)
                         {
                             session.EventDispatcher.Send(new PokemonEvolveEvent
@@ -163,7 +163,8 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 UniqueId = pokemon.Id,
                                 Result = evolveResponse.Result,
                                 Sequence = pokemonToEvolve.Count() == 1 ? 0 : sequence++,
-                                EvolvedPokemon = evolveResponse.EvolvedPokemonData
+                                EvolvedPokemon = evolveResponse.EvolvedPokemonData,
+                                Candy = await CandyUsed
                             });
                         }
 

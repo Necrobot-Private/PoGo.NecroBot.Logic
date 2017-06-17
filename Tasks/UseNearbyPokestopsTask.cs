@@ -71,7 +71,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                 await DoActionAtPokeStop(session, cancellationToken, pokeStop, fortInfo).ConfigureAwait(false);
 
-                try
+                try // Try to fix Error: System.NullReferenceException
                 {
                     bool gymAttackSucceeded = await UseGymBattleTask.Execute(session, cancellationToken, pokeStop, fortInfo).ConfigureAwait(false);
 
@@ -93,7 +93,9 @@ namespace PoGo.NecroBot.Logic.Tasks
                 }
                 catch
                 {
-                    Logger.Write("catch in usenearbypokestopstask", LogLevel.Debug);
+#if DEBUG
+                    Logger.Write("catch in usenearbypokestopstask", LogLevel.Error);
+#endif
                     return;
                 }
 

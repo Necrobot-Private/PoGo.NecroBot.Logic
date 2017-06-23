@@ -202,7 +202,7 @@ namespace PoGo.NecroBot.Logic.State
 
             var nextBot = manager.GetSwitchableAccount(bot);
             if (nextBot != null)
-                manager.SwitchAccounts(nextBot);
+                manager.SwitchAccountsAsync(nextBot);
 
             Settings.DefaultAltitude = att == 0 ? Client.CurrentAltitude : att;
             Settings.DefaultLatitude = lat == 0 ? Client.CurrentLatitude : lat;

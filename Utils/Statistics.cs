@@ -13,6 +13,7 @@ using PoGo.NecroBot.Logic.State;
 using POGOProtos.Inventory.Item;
 using POGOProtos.Networking.Responses;
 using TinyIoC;
+using PoGo.NecroBot.Logic.Utils;
 
 #endregion
 
@@ -136,6 +137,14 @@ namespace PoGo.NecroBot.Logic.Utils
                 var time = Math.Round(ep / (TotalExperience / GetRuntime()), 2);
                 var hours = 0.00;
                 var minutes = 0.00;
+
+                var TotXP = 0;
+
+                for (int i = 0; i < stat.Level + 1; i++)
+                {
+                    TotXP = TotXP + Statistics.GetXpDiff(i);
+                }
+
                 if (double.IsInfinity(time) == false && time > 0)
                 {
                     hours = Math.Truncate(TimeSpan.FromHours(time).TotalHours);
@@ -161,15 +170,20 @@ namespace PoGo.NecroBot.Logic.Utils
                             LevelForRewards = stat.Level + 1;
 
                             RepeatedField<ItemAward> items = Result.ItemsAwarded;
+                            string Rewards = "";
 
                             if (items.Any<ItemAward>())
                             {
                                 Logger.Write("- Received Items -", LogLevel.Info);
+                                Rewards = "\nRewards:";
                                 foreach (ItemAward item in items)
                                 {
                                     Logger.Write($"[ITEM] {item.ItemId} x {item.ItemCount} ", LogLevel.Info);
+                                    Rewards += $"\n{item.ItemId} x {item.ItemCount}";
                                 }
                             }
+                            if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
+                                await PushNotificationClient.SendNotification(session, $"Trainer Leveled up.", $"You've just reached level {stat.Level}{Rewards}", true);
                         }
                     }
                 }
@@ -179,6 +193,7 @@ namespace PoGo.NecroBot.Logic.Utils
                     Level = stat.Level,
                     HoursUntilLvl = hours,
                     MinutesUntilLevel = minutes,
+                    LevelXp = TotXP,
                     CurrentXp = stat.Experience,
                     PreviousXp = stat.PrevLevelXp,
                     LevelupXp = stat.NextLevelXp
@@ -200,6 +215,11 @@ namespace PoGo.NecroBot.Logic.Utils
             _exportStats = new StatsExport();
         }
 
+        public async Task<LevelUpRewardsResponse> GetLevelUpRewards(ISession ctx)
+        {
+            return await ctx.Inventory.GetLevelUpRewards(LevelForRewards).ConfigureAwait(false);
+        }
+
         public double GetRuntime()
         {
             return (DateTime.Now - _initSessionDateTime).TotalSeconds / 3600;
@@ -208,7 +228,7 @@ namespace PoGo.NecroBot.Logic.Utils
         public string GetTemplatedStats(string template, string xpTemplate)
         {
             var xpStats = string.Format(xpTemplate, _exportStats.Level, _exportStats.HoursUntilLvl,
-                _exportStats.MinutesUntilLevel, _exportStats.CurrentXp, _exportStats.LevelupXp);
+                _exportStats.MinutesUntilLevel, _exportStats.CurrentXp - _exportStats.LevelXp, _exportStats.LevelupXp - _exportStats.LevelXp);
 
             return string.Format(template, _playerName, FormatRuntime(), xpStats, TotalExperience / GetRuntime(),
                 TotalPokestops / GetRuntime(),
@@ -242,6 +262,7 @@ namespace PoGo.NecroBot.Logic.Utils
         public long CurrentXp;
         public double HoursUntilLvl;
         public int Level;
+        public int LevelXp;
         public long LevelupXp;
         public long PreviousXp;
         public double MinutesUntilLevel;

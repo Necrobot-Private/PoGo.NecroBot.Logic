@@ -254,7 +254,7 @@ namespace PoGo.NecroBot.Logic
                 var numToSaveForEvolve = pokemonGroupToTransfer.Count(p => pokemonToEvolveForThisGroup.Any(p2 => p2.Id == p.Id));
                 canBeRemoved -= numToSaveForEvolve;
 
-                Logger.Write($"Saving {numToSaveForEvolve} {pokemonGroupToTransfer.Key} for evolve. Number of {pokemonGroupToTransfer.Key} to be transferred: {canBeRemoved}", Logic.Logging.LogLevel.Info);
+                var PokemonId = session.Translation.GetPokemonTranslation(pokemonGroupToTransfer.Key);
 
                 if (prioritizeIVoverCp)
                 {

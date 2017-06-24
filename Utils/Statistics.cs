@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Google.Protobuf.Collections;
 using PoGo.NecroBot.Logic.Exceptions;
 using PoGo.NecroBot.Logic.Logging;
+using PoGo.NecroBot.Logic.Model;
 using PoGo.NecroBot.Logic.Model.Settings;
 using PoGo.NecroBot.Logic.State;
 using POGOProtos.Inventory.Item;
@@ -27,6 +28,7 @@ namespace PoGo.NecroBot.Logic.Utils
 
     public class Statistics
     {
+        private AccountConfigContext _context = new AccountConfigContext();
         private DateTime _initSessionDateTime = DateTime.Now;
 
         private StatsExport _exportStats;
@@ -182,8 +184,10 @@ namespace PoGo.NecroBot.Logic.Utils
                                     Rewards += $"\n{item.ItemId} x {item.ItemCount}";
                                 }
                             }
+                            var Account = GetCurrentAccount();
+
                             if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                                await PushNotificationClient.SendNotification(session, $"Trainer Leveled up.", $"You've just reached level {stat.Level}{Rewards}", true);
+                                await PushNotificationClient.SendNotification(session, $"{Account} has leveled up.", $"{Account} just reached level {stat.Level}{Rewards}", true).ConfigureAwait(false);
                         }
                     }
                 }
@@ -200,6 +204,13 @@ namespace PoGo.NecroBot.Logic.Utils
                 };
             }
             return output;
+        }
+
+        private object GetCurrentAccount()
+        {
+            var session = TinyIoCContainer.Current.Resolve<ISession>();
+            return _context.Account.FirstOrDefault(a => session.Settings.Username == a.Username && session.Settings.AuthType == a.AuthType);
+            //throw new NotImplementedException();
         }
 
         internal void Reset()

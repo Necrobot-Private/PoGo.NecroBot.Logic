@@ -119,7 +119,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                         await PushNotificationClient.SendNotification(session, $"Egg has hatched.", $"Pokemon: {hatched.PokemonId}\n" +
                                                                                                     $"Level: {PokemonInfo.GetLevel(hatched)}\n" +
                                                                                                     $"CP: {hatched.Cp}\n" +
-                                                                                                    $"IV: {Math.Round(PokemonInfo.CalculatePokemonPerfection(hatched), 2)}\n", true);
+                                                                                                    $"IV: {Math.Round(PokemonInfo.CalculatePokemonPerfection(hatched), 2)}\n", true).ConfigureAwait(false);
 
                     session.EventDispatcher.Send(new EggHatchedEvent
                     {

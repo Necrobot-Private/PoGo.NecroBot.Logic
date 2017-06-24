@@ -282,7 +282,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                                                                                    $"We were victorious!\n" +
                                                                                    $"XP: {exp}" +
                                                                                    $"Prest: {point}" +
-                                                                                   $"Level: {UseGymBattleTask.GetGymLevel(point),2:#0}", true); // +
+                                                                                   $"Level: {UseGymBattleTask.GetGymLevel(point),2:#0}", true).ConfigureAwait(false); // +
                                                                                    //$"{startResponse.Defender.ActivePokemon.PokemonData.PokemonId}", true);
                     }
                     continue;
@@ -374,7 +374,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                                                 Logger.Write($"Collected {count * 10} coins", LogLevel.Gym, ConsoleColor.DarkYellow);
 
                                                 if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                                                    await PushNotificationClient.SendNotification(session, $"Daily reward collected: {count * 10} coins", $"Congratulations, Your bot has worked hard and collected {count * 10} coins today.");
+                                                    await PushNotificationClient.SendNotification(session, $"Daily reward collected: {count * 10} coins", $"Congratulations, Your bot has worked hard and collected {count * 10} coins today.",true).ConfigureAwait(false);
                                             }
                                             else
                                                 Logger.Write($"Hmm, we have failed with gaining a reward: {collectDailyBonusResponse}", LogLevel.Gym, ConsoleColor.Magenta);
@@ -912,7 +912,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
                 await PushNotificationClient.SendNotification(session, $"Gym battle started", $"Trainer: {startResponse.Defender.TrainerPublicProfile.Name}\n" +
                                                                        $"We are attacking: {startResponse.Defender.ActivePokemon.PokemonData.PokemonId} ({startResponse.Defender.ActivePokemon.PokemonData.Cp} CP)\n" +
-                                                                       $"Lvl: {startResponse.Defender.ActivePokemon.PokemonData.Level():0.0}", true);
+                                                                       $"Lvl: {startResponse.Defender.ActivePokemon.PokemonData.Level():0.0}", true).ConfigureAwait(false);
 
             int loops = 0;
             List<BattleAction> emptyActions = new List<BattleAction>();
@@ -1075,7 +1075,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                                 TimeSpan BattleTimer = DateTime.Now.Subtract(AttackStart);
 
-                                Logger.Write($"Battle Timer: {90 - BattleTimer.TotalSeconds,3:##0} Sec remaining.", LogLevel.Info, ConsoleColor.White);
+                                Logger.Write($"Battle Timer: {100 - BattleTimer.TotalSeconds,3:##0} Sec remaining.", LogLevel.Info, ConsoleColor.White);
 
                                 if (attackResult != null && attackResult.ActiveAttacker != null)
                                     session.GymState.MyTeam.Where(w => w.Attacker.Id == attackResult.ActiveAttacker.PokemonData.Id).FirstOrDefault().HpState = attackResult.ActiveAttacker.CurrentHealth;
@@ -1086,7 +1086,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                             case BattleState.TimedOut:
                                 Logger.Write($"Our attack timed out...:");
                                 if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                                    await PushNotificationClient.SendNotification(session, "Gym Battle", $"Our attack timed out...:");
+                                    await PushNotificationClient.SendNotification(session, "Gym Battle", $"Our attack timed out...:",true).ConfigureAwait(false);
                                 await Task.Delay(1000).ConfigureAwait(false);
                                 return lastActions;
                             case BattleState.StateUnset:

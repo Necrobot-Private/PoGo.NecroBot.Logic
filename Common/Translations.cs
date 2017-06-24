@@ -381,7 +381,7 @@ namespace PoGo.NecroBot.Logic.Common
                 new KeyValuePair<TranslationString, string>(TranslationString.EventNoPokeballs,
                     "No Pokeballs - We missed a {0} with CP {1}"),
                 new KeyValuePair<TranslationString, string>(TranslationString.WaitingForMorePokemonToEvolve,
-                    "Waiting to evolve {0} Pokemon once {1} more are caught! ({2}/{3} for {4}% inventory)"),
+                    "Waiting to evolve {0} Pokemon once {1} more are caught! ({2}/{3} for {4,6:0.00}% inventory)"),
                 new KeyValuePair<TranslationString, string>(TranslationString.UseLuckyEggsMinPokemonAmountTooHigh,
                     "Lucky eggs will never be used with UseLuckyEggsMinPokemonAmount set to {0}, use <= {1} instead"),
                 new KeyValuePair<TranslationString, string>(TranslationString.CatchMorePokemonToUseLuckyEgg,

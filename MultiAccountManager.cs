@@ -16,7 +16,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using TinyIoC;
-using static PoGo.NecroBot.Logic.Utils.PushNotificationClient;
 
 namespace PoGo.NecroBot.Logic
 {
@@ -77,7 +76,7 @@ namespace PoGo.NecroBot.Logic
             return _context.Account.FirstOrDefault(a => session.Settings.Username == a.Username && session.Settings.AuthType == a.AuthType);
         }
 
-        public async void SwitchAccountsAsync(Account newAccount)
+        public void SwitchAccounts(Account newAccount)
         {
             if (newAccount == null)
                 return;
@@ -122,17 +121,19 @@ namespace PoGo.NecroBot.Logic
                 TotXP = TotXP + Statistics.GetXpDiff(i);
             }
 
-            long? XP = newAccount.CurrentXp - TotXP;
+            long? XP = newAccount.CurrentXp;
             if (XP == null) { XP = 0; }
             long? SD = newAccount.Stardust;
             if (SD == null) { SD = 0; }
-            Logger.Write($"User: {Account} | XP: {XP} | SD: {SD}", LogLevel.BotStats);
+            var NLevelXP = newAccount.NextLevelXp; 
+            if (newAccount.NextLevelXp == null) { NLevelXP = 0; }
+            Logger.Write($"User: {Account} | XP: {XP}({(double)XP / ((double)NLevelXP) * 100:#0.00}%) | SD: {SD}", LogLevel.BotStats);
 
             if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                await PushNotificationClient.SendNotification(session, $"Account changed to", $"{Account}\n" +
-                                                                       $"Level: {newAccount.Level}\n" +
-                                                                       $"XP: {XP:#,##0}({(double)XP / ((double)newAccount.NextLevelXp - XP) * 100:#0.00}%)\n" +
-                                                                       $"SD: {SD:#,##0}\n", true);
+                PushNotificationClient.SendNotification(session, $"Account changed to", $"{Account}\n" +
+                                                                 $"Level: {newAccount.Level}\n" +
+                                                                 $"XP: {XP:#,##0}({(double)XP / ((double)NLevelXP) * 100:#0.00}%)\n" +
+                                                                 $"SD: {SD:#,##0}\n", true).ConfigureAwait(false);
         }
 
         public void BlockCurrentBot(int expired = 60)
@@ -316,9 +317,9 @@ namespace PoGo.NecroBot.Logic
 
             // If we got here all accounts blocked so pause and retry.
             var pauseTime = session.LogicSettings.MultipleBotConfig.OnLimitPauseTimes;
-#pragma warning disable 4014 // added to get rid of compiler warning. Remove this if async code is used below.
-            SendNotification(session, "All accounts are blocked.", $"None of your accounts are available to switch to, so bot will sleep for {pauseTime} minutes until next account is available to run.", true);
-#pragma warning restore 4014
+
+            if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
+                PushNotificationClient.SendNotification(session, "All accounts are blocked.", $"None of your accounts are available to switch to, so bot will sleep for {pauseTime} minutes until next account is available to run.", true).ConfigureAwait(false);
 
             Task.Delay(pauseTime * 60 * 1000).Wait();
             return GetSwitchableAccount();
@@ -435,9 +436,9 @@ namespace PoGo.NecroBot.Logic
 
             account.Level = stat.StatsExport.Level;
             account.Stardust = stat.TotalStardust;
-            account.CurrentXp = stat.StatsExport.CurrentXp;
-            account.NextLevelXp = stat.StatsExport.LevelupXp;
-            account.PrevLevelXp = stat.StatsExport.PreviousXp;
+            account.CurrentXp = stat.StatsExport.CurrentXp - stat.StatsExport.LevelXp;
+            account.NextLevelXp = stat.StatsExport.LevelupXp - stat.StatsExport.LevelXp;
+            account.PrevLevelXp = stat.StatsExport.PreviousXp - stat.StatsExport.LevelXp;
             var now = DateTime.Now;
             if (account.LastRuntimeUpdatedAt.HasValue)
                 account.RuntimeTotal += (now - TimeUtil.GetDateTimeFromMilliseconds(account.LastRuntimeUpdatedAt.Value)).TotalMinutes;

@@ -127,7 +127,7 @@ namespace PoGo.NecroBot.Logic
             if (SD == null) { SD = 0; }
             var NLevelXP = newAccount.NextLevelXp; 
             if (newAccount.NextLevelXp == null) { NLevelXP = 0; }
-            Logger.Write($"User: {Account} | XP: {XP}({(double)XP / ((double)NLevelXP) * 100:#0.00}%) | SD: {SD}", LogLevel.BotStats);
+            Logger.Write($"User: {Account} | Lvl: {newAccount.Level} | XP: {XP}({(double)XP / ((double)NLevelXP) * 100:#0.00}%) | SD: {SD}", LogLevel.BotStats);
 
             if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
                 PushNotificationClient.SendNotification(session, $"Account changed to", $"{Account}\n" +

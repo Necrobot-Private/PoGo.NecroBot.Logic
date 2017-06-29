@@ -157,7 +157,7 @@ namespace PoGo.NecroBot.Logic.Utils
                 {
                     if (session.LogicSettings.SkipCollectingLevelUpRewards)
                     {
-                        Logger.Write("Current level: " + stat.Level + ". Skipped collecting level up rewards.", LogLevel.Info);
+                        Logger.Write("Current Lvl: " + stat.Level + ". Skipped collecting level up rewards.", LogLevel.Info);
                     }
                     else
                     {

@@ -14,10 +14,6 @@ namespace PoGo.NecroBot.Logic.Tasks
 {
     public abstract class BaseTransferPokemonTask
     {
-        public static string SP { get; private set; }
-        public static int maxL { get; private set; }
-        public static int userL { get; private set; }
-
         public static async Task Execute(ISession session, IEnumerable<PokemonData> pokemonsToTransfer, CancellationToken cancellationToken)
         {
             if (pokemonsToTransfer.Count() > 0)
@@ -58,16 +54,6 @@ namespace PoGo.NecroBot.Logic.Tasks
                         await DelayingUtils.DelayAsync(session.LogicSettings.TransferActionDelay, 0, cancellationToken).ConfigureAwait(false);
                     }
                 }
-                userL = 0;
-                maxL = 0;
-                foreach (var pokemon in pokemonsToTransfer)
-                {
-                    userL = pokemon.PokemonId.ToString().Length;
-                    if (userL > maxL)
-                    {
-                        maxL = userL;
-                    }
-                }
             }
         }
 
@@ -77,22 +63,17 @@ namespace PoGo.NecroBot.Logic.Tasks
                                         ? await session.Inventory.GetHighestPokemonOfTypeByIv(duplicatePokemon).ConfigureAwait(false)
                                         : await session.Inventory.GetHighestPokemonOfTypeByCp(duplicatePokemon).ConfigureAwait(false)) ??
                                     duplicatePokemon;
-            SP = "";
-            for (int i = 0; i < maxL - userL + 1; i++)
-            {
-                SP += " ";
-            }
-            var PokeID = duplicatePokemon.PokemonId.ToString() + SP;
 
             var ev = new TransferPokemonEvent
             {
                 Id = duplicatePokemon.Id,
-                PokemonId = duplicatePokemon.PokemonId,
+                PokemonId = duplicatePokemon.PokemonId, // session.Translation.GetPokemonTranslation(duplicatePokemon.PokemonId),
                 Perfection = PokemonInfo.CalculatePokemonPerfection(duplicatePokemon),
                 Cp = duplicatePokemon.Cp,
                 BestCp = bestPokemonOfType.Cp,
                 BestPerfection = PokemonInfo.CalculatePokemonPerfection(bestPokemonOfType),
-                Candy = await session.Inventory.GetCandyCount(duplicatePokemon.PokemonId).ConfigureAwait(false)
+                Candy = await session.Inventory.GetCandyCount(duplicatePokemon.PokemonId).ConfigureAwait(false),
+                Level = PokemonInfo.GetLevel(duplicatePokemon)
             };
 
             if (await session.Inventory.GetCandyFamily(duplicatePokemon.PokemonId).ConfigureAwait(false) != null)

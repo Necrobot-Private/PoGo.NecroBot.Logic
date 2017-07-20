@@ -711,6 +711,11 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             }
         }
 
+        public void Save(object configFilePath)
+        {
+            throw new NotImplementedException();
+        }
+
         public void CheckProxy(ITranslation translator)
         {
             Auth.CheckProxy(translator);

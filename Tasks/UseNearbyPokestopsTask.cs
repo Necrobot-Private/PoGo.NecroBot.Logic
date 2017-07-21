@@ -496,6 +496,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                         Exp = fortSearch.ExperienceAwarded,
                         Gems = fortSearch.GemsAwarded,
                         Items = StringUtils.GetSummedFriendlyNameOfItemAwardList(fortSearch.ItemsAwarded),
+                        Badges = fortSearch.AwardedGymBadge.GymBadgeType.ToString(),
                         Latitude = pokeStop.Latitude,
                         Longitude = pokeStop.Longitude,
                         Altitude = session.Client.CurrentAltitude,

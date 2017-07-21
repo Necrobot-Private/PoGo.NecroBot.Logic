@@ -202,6 +202,7 @@ namespace PoGo.NecroBot.Logic.Service
 
         private static void HandleEvent(FortUsedEvent fortUsedEvent, ISession session)
         {
+            LogLevel loglevel = fortUsedEvent.Fort.Type == FortType.Checkpoint ? LogLevel.Pokestop : LogLevel.Gym;
             var itemString = fortUsedEvent.InventoryFull
                 ? session.Translation.GetTranslation(TranslationString.InvFullPokestopLooting)
                 : fortUsedEvent.Items;
@@ -209,7 +210,7 @@ namespace PoGo.NecroBot.Logic.Service
                 session.Translation.GetTranslation(TranslationString.EventFortUsed, fortUsedEvent.Name,
                     fortUsedEvent.Exp, fortUsedEvent.Gems,
                     itemString, fortUsedEvent.Badges, session.Inventory.GetEggs().Result.Count(), fortUsedEvent.Latitude, fortUsedEvent.Longitude, fortUsedEvent.Altitude),
-                LogLevel.Pokestop);
+                loglevel);
         }
 
         private static void HandleEvent(FortFailedEvent fortFailedEvent, ISession session)

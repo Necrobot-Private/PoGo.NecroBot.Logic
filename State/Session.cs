@@ -32,7 +32,7 @@ namespace PoGo.NecroBot.Logic.State
     {
         ISettings Settings { get; set; }
         Inventory Inventory { get; }
-        Client Client { get; set; }
+        Client Client { get; }
         GetPlayerResponse Profile { get; set; }
         Navigation Navigation { get; }
         ILogicSettings LogicSettings { get; set; }
@@ -62,7 +62,7 @@ namespace PoGo.NecroBot.Logic.State
 
     public class Session : ISession
     {
-        public Session(GlobalSettings globalSettings, ISettings settings, ILogicSettings logicSettings, IElevationService elevationService) : this(
+        public Session(GlobalSettings globalSettings,ISettings settings, ILogicSettings logicSettings, IElevationService elevationService) : this(
            globalSettings, settings, logicSettings, elevationService, Common.Translation.Load(logicSettings))
         {
             LoggedTime = DateTime.Now;
@@ -137,7 +137,7 @@ namespace PoGo.NecroBot.Logic.State
 
         public Inventory Inventory { get; private set; }
 
-        public Client Client { get; set; }
+        public Client Client { get; private set; }
 
         public GetPlayerResponse Profile { get; set; }
         public Navigation Navigation { get; private set; }

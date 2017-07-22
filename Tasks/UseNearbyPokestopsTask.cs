@@ -494,7 +494,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                         Id = pokeStop.Id,
                         Name = fortInfo.Name,
                         Exp = fortSearch.ExperienceAwarded,
-                        Gems = fortSearch.GemsAwarded,
+                        Gems = fortSearch.GemsAwarded > 0 ? $"Yes {fortSearch.GemsAwarded}" : "No",
                         Items = StringUtils.GetSummedFriendlyNameOfItemAwardList(fortSearch.ItemsAwarded),
                         Badges = fortSearch.AwardedGymBadge != null ? fortSearch.AwardedGymBadge.GymBadgeType.ToString() : "No",
                         BonusLoot = fortSearch.BonusLoot != null ? StringUtils.GetSummedFriendlyNameOfGetLootList(fortSearch.BonusLoot.LootItem) : "No",

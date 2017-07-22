@@ -498,7 +498,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                         Items = StringUtils.GetSummedFriendlyNameOfItemAwardList(fortSearch.ItemsAwarded),
                         Badges = fortSearch.AwardedGymBadge != null ? fortSearch.AwardedGymBadge.GymBadgeType.ToString() : "No",
                         BonusLoot = fortSearch.BonusLoot != null ? StringUtils.GetSummedFriendlyNameOfGetLootList(fortSearch.BonusLoot.LootItem) : "No",
-                        RaidTickets = fortSearch.RaidTickets > 0 ? $"{fortSearch.RaidTickets} tickets" : "0 tickets",
+                        RaidTickets = fortSearch.RaidTickets > 0 ? $"{fortSearch.RaidTickets} tickets" : "No",
                         TeamBonusLoot = fortSearch.TeamBonusLoot != null ? StringUtils.GetSummedFriendlyNameOfGetLootList(fortSearch.TeamBonusLoot.LootItem) : "No",
                         PokemonDataEgg = fortSearch.PokemonDataEgg != null ? fortSearch.PokemonDataEgg : null,
                         Latitude = pokeStop.Latitude,

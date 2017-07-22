@@ -211,10 +211,9 @@ namespace PoGo.NecroBot.Logic.Service
 
             string PokemonDataEgg = "No";
 
-            if (fortUsedEvent.PokemonDataEgg.PokemonId != PokemonId.Missingno)
+            if (fortUsedEvent.PokemonDataEgg != null && fortUsedEvent.PokemonDataEgg.IsEgg)
             {
-                PokemonDataEgg = $"{session.Translation.GetPokemonTranslation(fortUsedEvent.PokemonDataEgg.PokemonId)}" +
-                    $" CP: {fortUsedEvent.PokemonDataEgg.Cp} IV: {PokemonInfo.CalculatePokemonPerfection(fortUsedEvent.PokemonDataEgg) / 100}%";
+                PokemonDataEgg = $"Yes {fortUsedEvent.PokemonDataEgg.EggKmWalkedTarget:0.0}km";
             }
 
             string eventMessage = session.Translation.GetTranslation(TranslationString.EventFortUsed, fortUsedEvent.Name,

@@ -75,9 +75,15 @@ namespace PoGo.NecroBot.Logic.Tasks
                 {
                     bool gymAttackSucceeded = await UseGymBattleTask.Execute(session, cancellationToken, pokeStop, fortInfo).ConfigureAwait(false);
 
+                    var _fortstate = new POGOProtos.Data.Gym.GymState()
+                    {
+                        FortData = pokeStop
+                    };
+
+
                     if (gymAttackSucceeded &&
                         fortInfo.Type == FortType.Gym &&
-                        (session.GymState.GetGymDetails(session, pokeStop).GymState.FortData.OwnedByTeam == session.Profile.PlayerData.Team || session.GymState.CapturedGymId.Equals(fortInfo.FortId)) &&
+                        (_fortstate.FortData.OwnedByTeam == session.Profile.PlayerData.Team || session.GymState.CapturedGymId.Equals(fortInfo.FortId)) &&
                         session.LogicSettings.GymConfig.Enable &&
                         session.LogicSettings.GymConfig.EnableGymTraining)
                     {
@@ -377,7 +383,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static int softbanCount = 0;
 
-        private static async Task FarmPokestop(ISession session, FortData pokeStop, FortDetailsResponse fortInfo, CancellationToken cancellationToken, bool doNotRetry = false)
+        public static async Task FarmPokestop(ISession session, FortData pokeStop, FortDetailsResponse fortInfo, CancellationToken cancellationToken, bool doNotRetry = false)
         {
             var manager = TinyIoC.TinyIoCContainer.Current.Resolve<MultiAccountManager>();
 
@@ -488,8 +494,13 @@ namespace PoGo.NecroBot.Logic.Tasks
                         Id = pokeStop.Id,
                         Name = fortInfo.Name,
                         Exp = fortSearch.ExperienceAwarded,
-                        Gems = fortSearch.GemsAwarded,
+                        Gems = fortSearch.GemsAwarded > 0 ? $"Yes {fortSearch.GemsAwarded}" : "No",
                         Items = StringUtils.GetSummedFriendlyNameOfItemAwardList(fortSearch.ItemsAwarded),
+                        Badges = fortSearch.AwardedGymBadge != null ? fortSearch.AwardedGymBadge.GymBadgeType.ToString() : "No",
+                        BonusLoot = fortSearch.BonusLoot != null ? StringUtils.GetSummedFriendlyNameOfGetLootList(fortSearch.BonusLoot.LootItem) : "No",
+                        RaidTickets = fortSearch.RaidTickets > 0 ? $"{fortSearch.RaidTickets} tickets" : "No",
+                        TeamBonusLoot = fortSearch.TeamBonusLoot != null ? StringUtils.GetSummedFriendlyNameOfGetLootList(fortSearch.TeamBonusLoot.LootItem) : "No",
+                        PokemonDataEgg = fortSearch.PokemonDataEgg != null ? fortSearch.PokemonDataEgg : null,
                         Latitude = pokeStop.Latitude,
                         Longitude = pokeStop.Longitude,
                         Altitude = session.Client.CurrentAltitude,

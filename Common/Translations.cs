@@ -491,7 +491,7 @@ namespace PoGo.NecroBot.Logic.Common
                 new KeyValuePair<TranslationString, string>(TranslationString.CurrentReviveInv,
                     "Revives:   {0} | MaxRevives:   {1} |"), // Raid Badges:  {2} |"),
                 new KeyValuePair<TranslationString, string>(TranslationString.CurrentMiscItemInv,
-                    "Berries:   {0} | Incense:      {1} | LuckyEggs:    {2} | Lures:       {3}"),
+                    "Berries:   {0} | Incense:      {1} | LuckyEggs:    {2} | Lures:       {3} | Evulotion:       {4}"),
                 new KeyValuePair<TranslationString, string>(TranslationString.MaxItemsCombinedOverMaxItemStorage,
                     "[Configuration Invalid] Your maximum items combined (Balls+Potions+Revives+Berries={0}) is over your max item storage ({1})"),
                 new KeyValuePair<TranslationString, string>(TranslationString.TotalRecyclePercentGreaterThan100,

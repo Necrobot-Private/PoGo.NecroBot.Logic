@@ -82,7 +82,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             if (session.LogicSettings.DetailedCountsBeforeRecycling)
                 Logger.Write(session.Translation.GetTranslation(TranslationString.CurrentMiscItemInv,
-                    currentAmountOfBerries.ToString("0").PadLeft(3, ' '), currentAmountOfIncense.ToString("0").PadLeft(3, ' '), currentAmountOfLuckyEggs.ToString("0").PadLeft(3, ' '), currentAmountOfLures.ToString("0").PadLeft(3, ' '), currentAmountOfEvoItems.ToString("0").PadLeft(3, ' ')));
+                    currentAmountOfBerries.ToString("0").PadLeft(3,' '), currentAmountOfIncense.ToString("0").PadLeft(3, ' '), currentAmountOfLuckyEggs.ToString("0").PadLeft(3, ' '), currentAmountOfLures.ToString("0").PadLeft(3, ' '), currentAmountOfEvoItems.ToString("0").PadLeft(3, ' ')));
 
             if (!session.LogicSettings.VerboseRecycling)
                 Logger.Write(session.Translation.GetTranslation(TranslationString.RecyclingQuietly), LogLevel.Recycling);

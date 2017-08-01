@@ -490,7 +490,7 @@ namespace PoGo.NecroBot.Logic.Common
                 new KeyValuePair<TranslationString, string>(TranslationString.CurrentPotionInv,
                     "Potions:   {0} | SuperPotions: {1} | HyperPotions: {2} | MaxPotions:  {3}"),
                 new KeyValuePair<TranslationString, string>(TranslationString.CurrentReviveInv,
-                    "Revives:   {0} | MaxRevives:   {1} | Evolve Items: {2} | Raid Badges: {3}"),
+                    "Revives:   {0} | MaxRevives:   {1} | Evolve Items: {2} | Raid Tickets: {3}"),
                 new KeyValuePair<TranslationString, string>(TranslationString.CurrentMiscItemInv,
                     "Berries:   {0} | Incense:      {1} | LuckyEggs:    {2} | Lures:       {3}"),
                 new KeyValuePair<TranslationString, string>(TranslationString.MaxItemsCombinedOverMaxItemStorage,

@@ -393,7 +393,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             }
             else
             {
-                totalEvolutionToKeep = session.LogicSettings.TotalAmountOfBerriesToKeep;
+                totalEvolutionToKeep = session.LogicSettings.TotalAmountOfEvolutionToKeep;
             }
 
             if (totalEvolutionCount > totalEvolutionToKeep)

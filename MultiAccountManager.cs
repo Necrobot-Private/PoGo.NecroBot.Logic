@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PoGo.NecroBot.Logic.Exceptions;
 using PoGo.NecroBot.Logic.Forms;
 using PoGo.NecroBot.Logic.Logging;
@@ -151,9 +151,7 @@ namespace PoGo.NecroBot.Logic
                     case 19:
                         // Just delete the accounts.db so it gets regenerated from scratch.
                         File.Delete(ACCOUNT_DB_NAME);
-                        
                         break;
-
                     case 25:
                         File.Delete(ACCOUNT_DB_NAME);
                         break;

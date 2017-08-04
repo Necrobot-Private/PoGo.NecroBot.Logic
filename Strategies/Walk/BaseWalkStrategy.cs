@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -10,12 +10,15 @@ using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Utils;
 using PokemonGo.RocketAPI;
 using GeoCoordinatePortable;
+using PoGo.NecroBot.Logic.Logging;
+using PoGo.NecroBot.Logic.Model.Settings;
 
 namespace PoGo.NecroBot.Logic.Strategies.Walk
 {
     abstract class BaseWalkStrategy : IWalkStrategy
     {
         protected readonly Client _client;
+        public static GlobalSettings settings;
 
         protected double _currentWalkingSpeed = 0;
         protected const double SpeedDownTo = 10 / 3.6;
@@ -50,6 +53,38 @@ namespace PoGo.NecroBot.Logic.Strategies.Walk
             {
                 distance = CalculateDistance(session.Client.CurrentLatitude, session.Client.CurrentLongitude,
                     desination.Latitude, desination.Longitude);
+            }
+
+            bool _GoogleWalk = session.LogicSettings.UseGoogleWalk; // == false ? false : true;
+            string _GoogleAPI = session.LogicSettings.GoogleApiKey; // == "" ? null : session.LogicSettings.GoogleApiKey;
+            bool _MapZenWalk = session.LogicSettings.UseMapzenWalk; // == false ? false : true;
+            string _MapZenAPI = session.LogicSettings.MapzenTurnByTurnApiKey; // == "" ? null : session.LogicSettings.GoogleApiKey;
+            bool _YoursWalk = session.LogicSettings.UseYoursWalk;
+
+            settings = new GlobalSettings();
+            if (distance >= 100)
+            {
+                if (_MapZenWalk == false && _MapZenAPI != "")
+                {
+                    Logger.Write($"Distance to travel is > 100m, switching to 'MapzenWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
+                    settings.YoursWalkConfig.UseYoursWalk = false;
+                    settings.MapzenWalkConfig.UseMapzenWalk = true;
+                }
+                if (_GoogleWalk == false && _GoogleAPI != "")
+                {
+                    Logger.Write($"Distance to travel is > 100m, switching to 'GoogleWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
+                    settings.YoursWalkConfig.UseYoursWalk = false;
+                    settings.GoogleWalkConfig.UseGoogleWalk = true;
+                }
+            }
+            else
+            {
+                if (_GoogleWalk || _MapZenWalk)
+                {
+                    Logger.Write($"Distance to travel is < 100m, switching to 'YoursWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
+                    settings.YoursWalkConfig.UseYoursWalk = true;
+                    settings.GoogleWalkConfig.UseGoogleWalk = false;
+                }
             }
 
             if (desination is FortLocation)

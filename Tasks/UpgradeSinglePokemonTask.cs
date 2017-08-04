@@ -34,8 +34,11 @@ namespace PoGo.NecroBot.Logic.Tasks
                                         : await session.Inventory.GetHighestPokemonOfTypeByCp(upgradeResult
                                             .UpgradedPokemon).ConfigureAwait(false)) ?? upgradeResult.UpgradedPokemon;
 
+                //stardust from what I've gathered is supposed to be - not + for AdditionalCpMultiplier
                 var stardust = -PokemonCpUtils.GetStardustCostsForPowerup(upgradeResult.UpgradedPokemon.CpMultiplier);
+                var stardust2 = -PokemonCpUtils.GetStardustCostsForPowerup(upgradeResult.UpgradedPokemon.CpMultiplier - upgradeResult.UpgradedPokemon.AdditionalCpMultiplier);
                 var totalStarDust = session.Inventory.UpdateStarDust(stardust);
+                Logger.Write($"SD1: {stardust,5:0} | SD2: {stardust2,5:0} | TotalSD: {totalStarDust,5:0}", LogLevel.Error);
 
                 session.EventDispatcher.Send(new UpgradePokemonEvent()
                 {

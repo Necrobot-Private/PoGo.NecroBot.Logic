@@ -256,13 +256,16 @@ namespace PoGo.NecroBot.Logic.Service
             string targetType;
             if (fortTargetEvent.Type == FortType.Gym)
                 targetType = session.Translation.GetTranslation(TranslationString.Gym); // "Gym";
-            else
+            else if (fortTargetEvent.Type == FortType.Checkpoint)
                 targetType = session.Translation.GetTranslation(TranslationString.Pokestop); // "Pokestop";
+            else
+                targetType = "POI";
 
             Logger.Write(
                 session.Translation.GetTranslation(TranslationString.EventFortTargeted, targetType,
-                    fortTargetEvent.Name,
-                    Math.Round(fortTargetEvent.Distance), intTimeForArrival, fortTargetEvent.Route),
+                    Math.Round(fortTargetEvent.Distance),
+                    intTimeForArrival,
+                    fortTargetEvent.Name, fortTargetEvent.Route),
                 LogLevel.Info, ConsoleColor.Gray);
         }
 
@@ -707,7 +710,7 @@ namespace PoGo.NecroBot.Logic.Service
         //TODO - move to string translation later.
         private static void HandleEvent(GymDeployEvent ev, ISession session)
         {
-            var Info = new GymDetailInfoEvent(); 
+            var Info = new GymDetailInfoEvent();
 
             Logger.Write($"Great!!! Your {ev.PokemonId.ToString()} is now defending {ev.Name} GYM. | Gym Points: {UseGymBattleTask.GetGymLevel(Info.Point)}",
                 LogLevel.Gym, ConsoleColor.Green);
@@ -735,10 +738,10 @@ namespace PoGo.NecroBot.Logic.Service
 
         private static void HandleEvent(GymWalkToTargetEvent ev, ISession session)
         {
-            Logger.Write(
-                $"Traveling to gym: {ev.Name} | Lat: {ev.Latitude}, Lng: {ev.Longitude} | ({ev.Distance:0.00}m)",
-                LogLevel.Gym, ConsoleColor.Cyan
-            );
+            //Logger.Write(
+            //    $"Traveling to gym: {ev.Name} | Lat: {ev.Latitude}, Lng: {ev.Longitude} | ({ev.Distance:0.00}m)",
+            //    LogLevel.Gym, ConsoleColor.Cyan
+            //);
         }
 
         private static void HandleEvent(GymTeamJoinEvent ev, ISession session)

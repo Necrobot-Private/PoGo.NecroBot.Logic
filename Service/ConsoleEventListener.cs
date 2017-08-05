@@ -262,10 +262,9 @@ namespace PoGo.NecroBot.Logic.Service
                 targetType = "POI";
 
             Logger.Write(
-                session.Translation.GetTranslation(TranslationString.EventFortTargeted, targetType,
-                    Math.Round(fortTargetEvent.Distance),
-                    intTimeForArrival,
-                    fortTargetEvent.Name, fortTargetEvent.Route),
+                session.Translation.GetTranslation(TranslationString.EventFortTargeted, Math.Round(fortTargetEvent.Distance),
+                    intTimeForArrival, fortTargetEvent.Route,
+                    targetType, fortTargetEvent.Name), 
                 LogLevel.Info, ConsoleColor.Gray);
         }
 

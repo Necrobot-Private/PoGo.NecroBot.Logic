@@ -703,7 +703,9 @@ namespace PoGo.NecroBot.Logic.Service
 
         private static void HandleEvent(GymDetailInfoEvent ev, ISession session)
         {
-            Logger.Write($"Visited Gym: {ev.Name} | Team: {ev.Team} | Gym points: {ev.Point} | Lvl: {UseGymBattleTask.GetGymLevel(ev.Point)}", LogLevel.Gym,
+            var GymDeployed = new GymDeployResponse();
+            var Deployed = GymDeployed.GymStatusAndDefenders.GymDefender.ToList();
+            Logger.Write($"Visited Gym: {ev.Name} | Team: {ev.Team} | Gym points: {ev.Point} | Free Spots: {6 - Deployed.Count}", LogLevel.Gym,
                 (ev.Team == TeamColor.Red)
                     ? ConsoleColor.Red
                     : (ev.Team == TeamColor.Yellow ? ConsoleColor.Yellow : ConsoleColor.Blue));
@@ -713,12 +715,14 @@ namespace PoGo.NecroBot.Logic.Service
         private static void HandleEvent(GymDeployEvent ev, ISession session)
         {
             var Info = new GymDetailInfoEvent();
+            var GymDeployed = new GymDeployResponse();
+            var Deployed = GymDeployed.GymStatusAndDefenders.GymDefender.ToList();
 
-            Logger.Write($"Great!!! Your {ev.PokemonId.ToString()} is now defending {ev.Name} GYM. | Gym Points: {UseGymBattleTask.GetGymLevel(Info.Point)}",
+            Logger.Write($"Great!!! Your {ev.PokemonId.ToString()} is now defending {ev.Name} GYM. | Free Spots: {6 - Deployed.Count}",
                 LogLevel.Gym, ConsoleColor.Green);
 
             if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                PushNotificationClient.SendNotification(session, $"Gym Post", $"Great!!! Your {ev.PokemonId.ToString()} is now defending {ev.Name} GYM.\nGym Points: {UseGymBattleTask.GetGymLevel(Info.Point)}", true).ConfigureAwait(false);
+                PushNotificationClient.SendNotification(session, $"Gym Post", $"Great!!! Your {ev.PokemonId.ToString()} is now defending {ev.Name} GYM.\nFree Spots: {6 - Deployed.Count}", true).ConfigureAwait(false);
         }
 
         private static void HandleEvent(GymBattleStarted ev, ISession session)

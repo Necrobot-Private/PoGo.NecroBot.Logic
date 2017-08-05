@@ -1,4 +1,4 @@
-﻿#region using directives
+#region using directives
 
 using System;
 using System.Collections.Generic;
@@ -357,7 +357,7 @@ namespace PoGo.NecroBot.Logic.Common
                 new KeyValuePair<TranslationString, string>(TranslationString.Gym, "Gym"),
                 new KeyValuePair<TranslationString, string>(TranslationString.Pokestop, "Pokestop"),
                 new KeyValuePair<TranslationString, string>(TranslationString.EventFortTargeted,
-                    "Traveling to {0}: {1} ({2} m) ({3} seconds) (route {4})"),
+                    "Traveling {0}m({1} sec) via {2} to next {3}: {4}"),
                 new KeyValuePair<TranslationString, string>(TranslationString.EventProfileLogin, "Playing as {0}"),
                 new KeyValuePair<TranslationString, string>(TranslationString.EventUsedIncense,
                     "Used Incense, remaining: {0}"),

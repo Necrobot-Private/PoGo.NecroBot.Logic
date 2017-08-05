@@ -65,7 +65,7 @@ namespace PoGo.NecroBot.Logic.Service
 
         private static void HandleEvent(TargetLocationEvent ev, ISession session)
         {
-            Logger.Write(session.Translation.GetTranslation(TranslationString.TargetLocationSet, ev.Latitude, ev.Longitude), LogLevel.Info);
+            //Logger.Write(session.Translation.GetTranslation(TranslationString.TargetLocationSet, ev.Latitude, ev.Longitude), LogLevel.Info);
         }
         private static void HandleEvent(BuddyUpdateEvent ev, ISession session)
         {
@@ -253,13 +253,16 @@ namespace PoGo.NecroBot.Logic.Service
             int intTimeForArrival = (int) (fortTargetEvent.Distance /
                                            (session.LogicSettings.WalkingSpeedInKilometerPerHour * 0.5));
 
-            string targetType;
+            string targetType = "";
             if (fortTargetEvent.Type == FortType.Gym)
                 targetType = session.Translation.GetTranslation(TranslationString.Gym); // "Gym";
             else if (fortTargetEvent.Type == FortType.Checkpoint)
-                targetType = session.Translation.GetTranslation(TranslationString.Pokestop); // "Pokestop";
-            else
-                targetType = "POI";
+            {
+                if(fortTargetEvent.Name != "User selected")
+                    targetType = session.Translation.GetTranslation(TranslationString.Pokestop); // "Pokestop";
+                else
+                    targetType = "POI";
+            }
 
             Logger.Write(
                 session.Translation.GetTranslation(TranslationString.EventFortTargeted, Math.Round(fortTargetEvent.Distance),

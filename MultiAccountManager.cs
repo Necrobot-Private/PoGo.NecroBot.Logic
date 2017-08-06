@@ -23,9 +23,9 @@ namespace PoGo.NecroBot.Logic
     {
         private AccountConfigContext _context = new AccountConfigContext();
         private const string ACCOUNT_DB_NAME = "accounts.db";
-
         public object Settings { get; private set; }
         private GlobalSettings _globalSettings { get; set; }
+
         public MultiAccountManager(GlobalSettings globalSettings, List<AuthConfig> accounts)
         {
             _globalSettings = globalSettings;
@@ -34,6 +34,7 @@ namespace PoGo.NecroBot.Logic
         }
 
         private LocalView<Account> _localAccounts;
+
         public LocalView<Account> Accounts
         {
             get
@@ -51,7 +52,6 @@ namespace PoGo.NecroBot.Logic
                     }
                     _context.SaveChanges();
                 }
-
                 _localAccounts = _context.Account.Local;
                 return _localAccounts;
             }
@@ -342,7 +342,6 @@ namespace PoGo.NecroBot.Logic
                 localAccount.RaisePropertyChanged("NextLevelXp");
                 localAccount.PrevLevelXp = current.PrevLevelXp;
                 localAccount.RaisePropertyChanged("PrevLevelXp");
-                
                 localAccount.RaisePropertyChanged("ExperienceInfo");
 
                 if (save)
@@ -391,7 +390,6 @@ namespace PoGo.NecroBot.Logic
                     return switchableAccount;
                 }
             }
-            
             return null;
         }
         

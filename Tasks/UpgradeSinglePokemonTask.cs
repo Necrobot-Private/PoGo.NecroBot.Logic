@@ -53,7 +53,6 @@ namespace PoGo.NecroBot.Logic.Tasks
                     USD = stardust,
                     Lvl = upgradeResult.UpgradedPokemon.Level(),
                 });
-
                 return true;
             }
             return false;

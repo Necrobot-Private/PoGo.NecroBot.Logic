@@ -42,7 +42,6 @@ namespace PoGo.NecroBot.Logic.Service
 
         private static void HandleEvent(SnipePokemonUpdateEvent e, ISession session)
         {
-
             //move to resource later
             if (e.IsRemoteEvent)
                 Logger.Write($"Expired snipe pokemon has been removed from queue : {e.Data.PokemonId} ");
@@ -67,6 +66,7 @@ namespace PoGo.NecroBot.Logic.Service
         {
             //Logger.Write(session.Translation.GetTranslation(TranslationString.TargetLocationSet, ev.Latitude, ev.Longitude), LogLevel.Info);
         }
+
         private static void HandleEvent(BuddyUpdateEvent ev, ISession session)
         {
             Logger.Write(
@@ -670,7 +670,6 @@ namespace PoGo.NecroBot.Logic.Service
                         ConsoleColor.Yellow
                     );
                     break;
-
                 case HumanWalkSnipeEventTypes.NotEnoughtPalls:
                     Logger.Write(
                         session.Translation.GetTranslation(
@@ -735,7 +734,6 @@ namespace PoGo.NecroBot.Logic.Service
             Logger.Write($"Error starting battle with gym: {ev.GymName}. Skipping...",
                 LogLevel.Error, ConsoleColor.Red);
         }
-
 
         private static void HandleEvent(GymListEvent ev, ISession session)
         {

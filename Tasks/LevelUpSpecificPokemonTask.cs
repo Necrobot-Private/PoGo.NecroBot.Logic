@@ -30,6 +30,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 if (pokemon == null) return;
 
                 var upgradeResult = await session.Inventory.UpgradePokemon(pokemon.Id).ConfigureAwait(false);
+
                 if (upgradeResult.Result.ToString().ToLower().Contains("success"))
                 {
                     var stardust = -PokemonCpUtils.GetStardustCostsForPowerup(pokemon.CpMultiplier); //+ pokemon.AdditionalCpMultiplier);
@@ -50,4 +51,3 @@ namespace PoGo.NecroBot.Logic.Tasks
         }
     }
 }
-

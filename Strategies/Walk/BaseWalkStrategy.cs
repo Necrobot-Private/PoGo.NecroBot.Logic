@@ -69,12 +69,16 @@ namespace PoGo.NecroBot.Logic.Strategies.Walk
                     Logger.Write($"Distance to travel is > 100m, switching to 'MapzenWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
                     settings.YoursWalkConfig.UseYoursWalk = false;
                     settings.MapzenWalkConfig.UseMapzenWalk = true;
+                    session.LogicSettings.UseYoursWalk = false;
+                    session.LogicSettings.UseMapzenWalk = true;
                 }
                 if (_GoogleWalk == false && _GoogleAPI != "")
                 {
                     Logger.Write($"Distance to travel is > 100m, switching to 'GoogleWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
                     settings.YoursWalkConfig.UseYoursWalk = false;
                     settings.GoogleWalkConfig.UseGoogleWalk = true;
+                    session.LogicSettings.UseYoursWalk = false;
+                    session.LogicSettings.UseGoogleWalk = true;
                 }
             }
             else
@@ -83,7 +87,11 @@ namespace PoGo.NecroBot.Logic.Strategies.Walk
                 {
                     Logger.Write($"Distance to travel is < 100m, switching to 'YoursWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
                     settings.YoursWalkConfig.UseYoursWalk = true;
+                    settings.MapzenWalkConfig.UseMapzenWalk = false;
                     settings.GoogleWalkConfig.UseGoogleWalk = false;
+                    session.LogicSettings.UseYoursWalk = true;
+                    session.LogicSettings.UseGoogleWalk = false;
+                    session.LogicSettings.UseMapzenWalk = false;
                 }
             }
 

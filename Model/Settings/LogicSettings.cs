@@ -197,17 +197,18 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         public Dictionary<PokemonId, SnipeFilter> PokemonSnipeFilters => _settings.SnipePokemonFilter;
         public Dictionary<PokemonId, EvolveFilter> PokemonEvolveFilters => _settings.PokemonEvolveFilter;
         public bool StartupWelcomeDelay => _settings.ConsoleConfig.StartupWelcomeDelay;
-        public bool UseGoogleWalk => _settings.GoogleWalkConfig.UseGoogleWalk;
+
+        public bool UseGoogleWalk { get => _settings.GoogleWalkConfig.UseGoogleWalk; set => throw new NotImplementedException(); }
         public double DefaultStepLength => _settings.GoogleWalkConfig.DefaultStepLength;
         public bool UseGoogleWalkCache => _settings.GoogleWalkConfig.Cache;
         public string GoogleApiKey => _settings.GoogleWalkConfig.GoogleAPIKey;
         public string GoogleHeuristic => _settings.GoogleWalkConfig.GoogleHeuristic;
         public string GoogleElevationApiKey => _settings.GoogleWalkConfig.GoogleElevationAPIKey;
 
-        public bool UseYoursWalk => _settings.YoursWalkConfig.UseYoursWalk;
+        public bool UseYoursWalk { get => _settings.YoursWalkConfig.UseYoursWalk; set => throw new NotImplementedException(); }
         public string YoursWalkHeuristic => _settings.YoursWalkConfig.YoursWalkHeuristic;
 
-        public bool UseMapzenWalk => _settings.MapzenWalkConfig.UseMapzenWalk;
+        public bool UseMapzenWalk {get => _settings.MapzenWalkConfig.UseMapzenWalk; set => throw new NotImplementedException(); }
         public string MapzenTurnByTurnApiKey => _settings.MapzenWalkConfig.MapzenTurnByTurnApiKey;
         public string MapzenWalkHeuristic => _settings.MapzenWalkConfig.MapzenWalkHeuristic;
         public string MapzenElevationApiKey => _settings.MapzenWalkConfig.MapzenElevationApiKey;
@@ -294,6 +295,5 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         public int CatchFleeDelay => _settings.HumanlikeDelays.CatchFleeDelay;
         public int CatchMissedDelay => _settings.HumanlikeDelays.CatchMissedDelay;
         public int BeforeCatchDelay => _settings.HumanlikeDelays.BeforeCatchDelay;
-
     }
 }

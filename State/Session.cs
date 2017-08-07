@@ -31,7 +31,6 @@ namespace PoGo.NecroBot.Logic.State
     public interface ISession
     {
         ISettings Settings { get; set; }
-        GlobalSettings settings { get; set; }
         Inventory Inventory { get; }
         Client Client { get; set; }
         GetPlayerResponse Profile { get; set; }

@@ -815,7 +815,6 @@ namespace PoGo.NecroBot.Logic.Tasks
                 case UseItemPotionResponse.Types.Result.ErrorDeployedToFort:
                     Logger.Write($"Pokemon: {pokemon.PokemonId} (CP: {pokemon.Cp}) is already deployed to a gym...");
                     return false;
-
                 case UseItemPotionResponse.Types.Result.ErrorCannotUse:
                     return false;
                 default:
@@ -842,7 +841,6 @@ namespace PoGo.NecroBot.Logic.Tasks
                 case UseItemPotionResponse.Types.Result.ErrorDeployedToFort:
                     Logger.Write($"Pokemon: {pokemon.PokemonId} (CP: {pokemon.Cp}) is already deployed to a gym...");
                     return false;
-
                 case UseItemPotionResponse.Types.Result.ErrorCannotUse:
                     return false;
                 default:

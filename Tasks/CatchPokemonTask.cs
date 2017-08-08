@@ -549,7 +549,6 @@ namespace PoGo.NecroBot.Logic.Tasks
                             case CatchPokemonResponse.Types.CatchStatus.CatchMissed:
                                 await DelayingUtils.DelayAsync(session.LogicSettings.CatchMissedDelay, 0, session.CancellationTokenSource.Token).ConfigureAwait(false);
                                 break;
-
                             default:
                                 break;
                         }

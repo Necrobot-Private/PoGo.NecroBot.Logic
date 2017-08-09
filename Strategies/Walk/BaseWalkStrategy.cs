@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -10,15 +10,16 @@ using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Utils;
 using PokemonGo.RocketAPI;
 using GeoCoordinatePortable;
-using PoGo.NecroBot.Logic.Logging;
-using PoGo.NecroBot.Logic.Model.Settings;
+//using PoGo.NecroBot.Logic.Logging;
+//using PoGo.NecroBot.Logic.Model.Settings;
 
 namespace PoGo.NecroBot.Logic.Strategies.Walk
 {
     abstract class BaseWalkStrategy : IWalkStrategy
     {
-        protected readonly Client _client;
-        public static GlobalSettings settings;
+        public static Client _client;
+        //public static GlobalSettings _settings;
+        //public static ISession _session;
 
         protected double _currentWalkingSpeed = 0;
         protected const double SpeedDownTo = 10 / 3.6;
@@ -55,45 +56,44 @@ namespace PoGo.NecroBot.Logic.Strategies.Walk
                     desination.Latitude, desination.Longitude);
             }
 
-            bool _GoogleWalk = session.LogicSettings.UseGoogleWalk; // == false ? false : true;
-            string _GoogleAPI = session.LogicSettings.GoogleApiKey; // == "" ? null : session.LogicSettings.GoogleApiKey;
-            bool _MapZenWalk = session.LogicSettings.UseMapzenWalk; // == false ? false : true;
-            string _MapZenAPI = session.LogicSettings.MapzenTurnByTurnApiKey; // == "" ? null : session.LogicSettings.GoogleApiKey;
-            bool _YoursWalk = session.LogicSettings.UseYoursWalk;
+            //bool _GoogleWalk = session.LogicSettings.UseGoogleWalk; // == false ? false : true;
+            //string _GoogleAPI = session.LogicSettings.GoogleApiKey; // == "" ? null : session.LogicSettings.GoogleApiKey;
+            //bool _MapZenWalk = session.LogicSettings.UseMapzenWalk; // == false ? false : true;
+            //string _MapZenAPI = session.LogicSettings.MapzenTurnByTurnApiKey; // == "" ? null : session.LogicSettings.GoogleApiKey;
+            //bool _YoursWalk = session.LogicSettings.UseYoursWalk;
 
-            settings = new GlobalSettings();
-            if (distance >= 100)
-            {
-                if (_MapZenWalk == false && _MapZenAPI != "")
-                {
-                    Logger.Write($"Distance to travel is > 100m, switching to 'MapzenWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
-                    settings.YoursWalkConfig.UseYoursWalk = false;
-                    settings.MapzenWalkConfig.UseMapzenWalk = true;
-                    session.LogicSettings.UseYoursWalk = false;
-                    session.LogicSettings.UseMapzenWalk = true;
-                }
-                if (_GoogleWalk == false && _GoogleAPI != "")
-                {
-                    Logger.Write($"Distance to travel is > 100m, switching to 'GoogleWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
-                    settings.YoursWalkConfig.UseYoursWalk = false;
-                    settings.GoogleWalkConfig.UseGoogleWalk = true;
-                    session.LogicSettings.UseYoursWalk = false;
-                    session.LogicSettings.UseGoogleWalk = true;
-                }
-            }
-            else
-            {
-                if (_GoogleWalk || _MapZenWalk)
-                {
-                    Logger.Write($"Distance to travel is < 100m, switching to 'YoursWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
-                    settings.YoursWalkConfig.UseYoursWalk = true;
-                    settings.MapzenWalkConfig.UseMapzenWalk = false;
-                    settings.GoogleWalkConfig.UseGoogleWalk = false;
-                    session.LogicSettings.UseYoursWalk = true;
-                    session.LogicSettings.UseGoogleWalk = false;
-                    session.LogicSettings.UseMapzenWalk = false;
-                }
-            }
+            //if (distance >= 100)
+            //{
+            //    if (_MapZenWalk == false && _MapZenAPI != "")
+            //    {
+            //        Logger.Write($"Distance to travel is > 100m, switching to 'MapzenWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
+            //        settings.YoursWalkConfig.UseYoursWalk = false;
+            //        settings.MapzenWalkConfig.UseMapzenWalk = true;
+            //        session.LogicSettings.UseYoursWalk = false;
+            //        session.LogicSettings.UseMapzenWalk = true;
+            //    }
+            //    if (_GoogleWalk == false && _GoogleAPI != "")
+            //    {
+            //        Logger.Write($"Distance to travel is > 100m, switching to 'GoogleWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
+            //        settings.YoursWalkConfig.UseYoursWalk = false;
+            //        settings.GoogleWalkConfig.UseGoogleWalk = true;
+            //        session.LogicSettings.UseYoursWalk = false;
+            //        session.LogicSettings.UseGoogleWalk = true;
+            //    }
+            //}
+            //else
+            //{
+            //    if (_GoogleWalk || _MapZenWalk)
+            //    {
+            //        Logger.Write($"Distance to travel is < 100m, switching to 'YoursWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
+            //        settings.YoursWalkConfig.UseYoursWalk = true;
+            //        settings.MapzenWalkConfig.UseMapzenWalk = false;
+            //        settings.GoogleWalkConfig.UseGoogleWalk = false;
+            //        session.LogicSettings.UseYoursWalk = true;
+            //        session.LogicSettings.UseGoogleWalk = false;
+            //        session.LogicSettings.UseMapzenWalk = false;
+            //    }
+            //}
 
             if (desination is FortLocation)
             {

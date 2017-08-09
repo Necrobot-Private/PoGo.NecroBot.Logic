@@ -263,6 +263,7 @@ namespace PoGo.NecroBot.Logic
             return disableSwitchTime < DateTime.Now;
         }
 
+        //public int Switchable = 0;
         public Account GetSwitchableAccount(Account bot = null, bool pauseIfNoSwitchableAccount = true)
         {
             ISession session = TinyIoCContainer.Current.Resolve<ISession>();
@@ -293,6 +294,17 @@ namespace PoGo.NecroBot.Logic
             Logic.Logging.Logger.Write($"All accounts are blocked. None of your accounts are available to switch to, so bot will sleep for {pauseTime} minutes until next account is available to run.");
             if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
                 PushNotificationClient.SendNotification(session, "All accounts are blocked.", $"None of your accounts are available to switch to, so bot will sleep for {pauseTime} minutes until next account is available to run.", true).ConfigureAwait(false);
+
+            //Switchable += 1;
+            //if (Switchable > 1)
+            //{
+                foreach (var Acc in _context.Account.Local)
+                {
+                    Acc.LastLogin = null;
+                }
+                //Switchable = 0;
+                //return bot;
+            //}
 
             Task.Delay(pauseTime * 60 * 1000).Wait();
             return GetSwitchableAccount();

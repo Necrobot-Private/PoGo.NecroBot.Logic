@@ -171,6 +171,9 @@ namespace PoGo.NecroBot.Logic.State
                 var pokemonSettings = (await Inventory.GetPokemonSettings().ConfigureAwait(false)).ToList();
                 EventDispatcher.Send(new InventoryRefreshedEvent(null, pokemonSettings, candy));
             });
+
+            //Maybe add auto Google/Yours/Mapzen walk here???
+
             Navigation = new Navigation(Client, logicSettings);
             Navigation.WalkStrategy.UpdatePositionEvent +=
                 (session, lat, lng,s) => EventDispatcher.Send(new UpdatePositionEvent {Latitude = lat, Longitude = lng, Speed = s});

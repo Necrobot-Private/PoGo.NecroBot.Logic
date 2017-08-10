@@ -65,5 +65,15 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         [DefaultValue(false)]
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 10)]
         public bool SkipCollectingLevelUpRewards { get; set; }
+
+        [NecrobotConfig(Description = "Sets the AutoWalkAI", Position = 11)]
+        [DefaultValue(false)]
+        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 11)]
+        public bool AutoWalkAI { get; set; }
+
+        [NecrobotConfig(Description = "Sets the LoadPokeStopsTimer interval(10 - 60 sec)", Position = 12)]
+        [DefaultValue(30)]
+        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 12)]
+        public int PokeStopsTimer { get; set; }
     }
 }

@@ -32,7 +32,7 @@ namespace PoGo.NecroBot.Logic.State
     {
         ISettings Settings { get; set; }
         Inventory Inventory { get; }
-        Client Client { get; set; }
+        Client Client { get; }
         GetPlayerResponse Profile { get; set; }
         Navigation Navigation { get; }
         ILogicSettings LogicSettings { get; set; }
@@ -132,7 +132,7 @@ namespace PoGo.NecroBot.Logic.State
         public GlobalSettings GlobalSettings { get; set; }
         public ISettings Settings { get; set; }
         public Inventory Inventory { get; private set; }
-        public Client Client { get; set; }
+        public Client Client { get; }
         public GetPlayerResponse Profile { get; set; }
         public Navigation Navigation { get; private set; }
         public ILogicSettings LogicSettings { get; set; }

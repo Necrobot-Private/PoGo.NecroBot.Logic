@@ -3,7 +3,6 @@
 using GeoCoordinatePortable;
 using PoGo.NecroBot.Logic.Event;
 using PoGo.NecroBot.Logic.Interfaces.Configuration;
-using PoGo.NecroBot.Logic.Logging;
 using PoGo.NecroBot.Logic.Model;
 using PoGo.NecroBot.Logic.Model.Settings;
 using PoGo.NecroBot.Logic.State;
@@ -30,12 +29,28 @@ namespace PoGo.NecroBot.Logic
         public GlobalSettings settings { get; set; }
         private Random WalkingRandom = new Random();
         private List<IWalkStrategy> WalkStrategyQueue { get; set; }
+        public bool AutoWalkAI { get; set; }
+
         public Dictionary<Type, DateTime> WalkStrategyBlackList = new Dictionary<Type, DateTime>();
         public ILogicSettings _logicSettings;
+        public FortTargetEvent fortTargetEvent;
+
+        private bool _GoogleWalk, _MapZenWalk, _YoursWalk, _GpxPathing;
+        private string _GoogleAPI, _MapZenAPI;
+        private double distance;
+
 
         public Navigation(Client client, ILogicSettings logicSettings)
         {
             _client = client;
+
+            // Need these to recall useres preset walking vars at first load of Navigation.
+            _GoogleWalk = logicSettings.UseGoogleWalk;
+            _GoogleAPI = logicSettings.GoogleApiKey;
+            _MapZenWalk = logicSettings.UseMapzenWalk;
+            _MapZenAPI = logicSettings.MapzenTurnByTurnApiKey;
+            _YoursWalk = logicSettings.UseYoursWalk;
+            _GpxPathing = logicSettings.UseGpxPathing;
 
             InitializeWalkStrategies(logicSettings);
             WalkStrategy = GetStrategy(logicSettings);
@@ -94,99 +109,79 @@ namespace PoGo.NecroBot.Logic
             ISession session,
             CancellationToken cancellationToken, double customWalkingSpeed = 0.0)
         {
+            // Need these to recall useres preset walking vars before bot continues to next POI.
+            _GoogleWalk = session.LogicSettings.UseGoogleWalk;
+            _GoogleAPI = session.LogicSettings.GoogleApiKey;
+            _MapZenWalk = session.LogicSettings.UseMapzenWalk;
+            _MapZenAPI = session.LogicSettings.MapzenTurnByTurnApiKey;
+            _YoursWalk = session.LogicSettings.UseYoursWalk;
+            _GpxPathing = session.LogicSettings.UseGpxPathing;
+
+            distance = LocationUtils.CalculateDistanceInMeters(session.Client.CurrentLatitude, session.Client.CurrentLongitude,
+            targetLocation.Latitude, targetLocation.Longitude);
+
             cancellationToken.ThrowIfCancellationRequested();
             TinyIoC.TinyIoCContainer.Current.Resolve<MultiAccountManager>().ThrowIfSwitchAccountRequested();
 
             // If the stretegies become bigger, create a factory for easy management
 
             //Logging.Logger.Write($"Navigation - Walking speed {customWalkingSpeed}");
-
-            //Maybe add auto Google/Yours/Mapzen walk here???
-            var distance = LocationUtils.CalculateDistanceInMeters(session.Client.CurrentLatitude, session.Client.CurrentLongitude,
-                targetLocation.Latitude, targetLocation.Longitude);
-
-            bool _GoogleWalk = session.LogicSettings.UseGoogleWalk; // == false ? false : true;
-            string _GoogleAPI = session.LogicSettings.GoogleApiKey; // == "" ? null : session.LogicSettings.GoogleApiKey;
-            bool _MapZenWalk = session.LogicSettings.UseMapzenWalk; // == false ? false : true;
-            string _MapZenAPI = session.LogicSettings.MapzenTurnByTurnApiKey; // == "" ? null : session.LogicSettings.GoogleApiKey;
-            bool _YoursWalk = session.LogicSettings.UseYoursWalk;
-
-            settings = new GlobalSettings();
-
-            if (distance >= 100)
-            {
-                if (_MapZenWalk == false && _MapZenAPI != "")
-                {
-                    Logger.Write($"Distance to travel is > 100m, switching to 'MapzenWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
-                    settings.YoursWalkConfig.UseYoursWalk = false;
-                    settings.MapzenWalkConfig.UseMapzenWalk = true;
-                    //session.LogicSettings.UseYoursWalk = false;
-                    //session.LogicSettings.UseMapzenWalk = true;
-                }
-                if (_GoogleWalk == false && _GoogleAPI != "")
-                {
-                    Logger.Write($"Distance to travel is > 100m, switching to 'GoogleWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
-                    settings.YoursWalkConfig.UseYoursWalk = false;
-                    settings.GoogleWalkConfig.UseGoogleWalk = true;
-                    //session.LogicSettings.UseYoursWalk = false;
-                    //session.LogicSettings.UseGoogleWalk = true;
-                }
-            }
-            else
-            {
-                if (_GoogleWalk || _MapZenWalk)
-                {
-                    Logger.Write($"Distance to travel is < 100m, switching to 'YoursWalk'", LogLevel.Info, ConsoleColor.DarkYellow);
-                    settings.YoursWalkConfig.UseYoursWalk = true;
-                    settings.GoogleWalkConfig.UseGoogleWalk = false;
-                    settings.MapzenWalkConfig.UseMapzenWalk = false;
-                    //session.LogicSettings.UseYoursWalk = true;
-                    //session.LogicSettings.UseGoogleWalk = false;
-                    //session.LogicSettings.UseMapzenWalk = false;
-                }
-            }
             InitializeWalkStrategies(session.LogicSettings);
             WalkStrategy = GetStrategy(session.LogicSettings);
-
             await WalkStrategy.Walk(targetLocation, functionExecutedWhileWalking, session, cancellationToken, customWalkingSpeed).ConfigureAwait(false);
-
-            settings.YoursWalkConfig.UseYoursWalk = _YoursWalk;
-            settings.GoogleWalkConfig.UseGoogleWalk = _GoogleWalk;
-            settings.MapzenWalkConfig.UseMapzenWalk = _MapZenWalk;
-            //session.LogicSettings.UseYoursWalk = _YoursWalk;
-            //session.LogicSettings.UseGoogleWalk = _GoogleWalk;
-            //session.LogicSettings.UseMapzenWalk = _MapZenWalk;
-
-            InitializeWalkStrategies(session.LogicSettings);
-            WalkStrategy = GetStrategy(session.LogicSettings);
         }
 
         private void InitializeWalkStrategies(ILogicSettings logicSettings)
         {
+            //AutoWalkAI code???
+            if(AutoWalkAI)
+            { 
+                if (distance >= 250)
+                {
+                    if (_MapZenWalk == false && _MapZenAPI != "")
+                    {
+                        Logging.Logger.Write($"Distance to travel is > 250m, switching to 'MapzenWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        _YoursWalk = false;
+                        _MapZenWalk = true;
+                    }
+                    if (_GoogleWalk == false && _GoogleAPI != "")
+                    {
+                        Logging.Logger.Write($"Distance to travel is > 250m, switching to 'GoogleWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        _YoursWalk = false;
+                        _GoogleWalk = true;
+                    }
+                }
+                else
+                {
+                    if (_GoogleWalk || _MapZenWalk)
+                        Logging.Logger.Write($"Distance to travel is < 250m, switching back to '{fortTargetEvent.Route}'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                }
+            }
+
             WalkStrategyQueue = new List<IWalkStrategy>();
 
-            // Maybe change configuration for a Navigation Type.
+            //Maybe change configuration for a Navigation Type.
             if (logicSettings.DisableHumanWalking)
             {
                 WalkStrategyQueue.Add(new FlyStrategy(_client));
             }
 
-            if (logicSettings.UseGpxPathing)
+            if (_GpxPathing)
             {
                 WalkStrategyQueue.Add(new HumanPathWalkingStrategy(_client));
             }
 
-            if (logicSettings.UseGoogleWalk)
+            if (_GoogleWalk)
             {
                 WalkStrategyQueue.Add(new GoogleStrategy(_client));
             }
 
-            if (logicSettings.UseMapzenWalk)
+            if (_MapZenWalk)
             {
                 WalkStrategyQueue.Add(new MapzenNavigationStrategy(_client));
             }
 
-            if (logicSettings.UseYoursWalk)
+            if (_YoursWalk)
             {
                 WalkStrategyQueue.Add(new YoursNavigationStrategy(_client));
             }

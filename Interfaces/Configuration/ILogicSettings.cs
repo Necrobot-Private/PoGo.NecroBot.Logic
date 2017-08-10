@@ -170,17 +170,17 @@ namespace PoGo.NecroBot.Logic.Interfaces.Configuration
 
         Dictionary<PokemonId, BotSwitchPokemonFilter> BotSwitchPokemonFilters { get; }
         bool StartupWelcomeDelay { get; }
-        bool UseGoogleWalk { get; set; }
+        bool UseGoogleWalk { get; }
         double DefaultStepLength { get; }
         bool UseGoogleWalkCache { get; }
         string GoogleApiKey { get; }
         string GoogleHeuristic { get; }
         string GoogleElevationApiKey { get; }
 
-        bool UseYoursWalk { get; set; }
+        bool UseYoursWalk { get; }
         string YoursWalkHeuristic { get; }
 
-        bool UseMapzenWalk { get; set; }
+        bool UseMapzenWalk { get; }
         string MapzenTurnByTurnApiKey { get; }
         string MapzenWalkHeuristic { get; }
         string MapzenElevationApiKey { get; }

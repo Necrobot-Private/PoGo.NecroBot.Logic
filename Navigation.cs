@@ -26,26 +26,22 @@ namespace PoGo.NecroBot.Logic
     {
         public IWalkStrategy WalkStrategy { get; set; }
         private readonly Client _client;
-        public GlobalSettings _settings;
         private Random WalkingRandom = new Random();
         private List<IWalkStrategy> WalkStrategyQueue { get; set; }
 
         public Dictionary<Type, DateTime> WalkStrategyBlackList = new Dictionary<Type, DateTime>();
-        public ILogicSettings _logicSettings;
         public FortTargetEvent fortTargetEvent;
 
         private bool _GoogleWalk, _MapZenWalk, _YoursWalk, _GpxPathing, _AutoWalkAI;
         private string _GoogleAPI, _MapZenAPI;
         private double distance;
-
+        private int _AutoWalkDist;
 
         public Navigation(Client client, ILogicSettings logicSettings)
         {
             _client = client;
 
             // Need these to recall useres preset walking vars at first load of Navigation.
-            //_playerConfig = new PlayerConfig();
-
             _GoogleWalk = logicSettings.UseGoogleWalk;
             _GoogleAPI = logicSettings.GoogleApiKey;
             _MapZenWalk = logicSettings.UseMapzenWalk;
@@ -54,6 +50,7 @@ namespace PoGo.NecroBot.Logic
             _GpxPathing = logicSettings.UseGpxPathing;
 
             _AutoWalkAI = logicSettings.AutoWalkAI;
+            _AutoWalkDist = logicSettings.AutoWalkDist;
 
             InitializeWalkStrategies(logicSettings);
             WalkStrategy = GetStrategy(logicSettings);
@@ -121,6 +118,7 @@ namespace PoGo.NecroBot.Logic
             _GpxPathing = session.LogicSettings.UseGpxPathing;
 
             _AutoWalkAI = session.LogicSettings.AutoWalkAI;
+            _AutoWalkDist = session.LogicSettings.AutoWalkDist;
 
             distance = LocationUtils.CalculateDistanceInMeters(session.Client.CurrentLatitude, session.Client.CurrentLongitude,
             targetLocation.Latitude, targetLocation.Longitude);
@@ -141,17 +139,17 @@ namespace PoGo.NecroBot.Logic
             //AutoWalkAI code???
             if(_AutoWalkAI)
             { 
-                if (distance >= 250)
+                if (distance >= _AutoWalkDist)
                 {
                     if (_MapZenWalk == false && _MapZenAPI != "")
                     {
-                        Logging.Logger.Write($"Distance to travel is > 250m, switching to 'MapzenWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, switching to 'MapzenWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
                         _YoursWalk = false;
                         _MapZenWalk = true;
                     }
                     if (_GoogleWalk == false && _GoogleAPI != "")
                     {
-                        Logging.Logger.Write($"Distance to travel is > 250m, switching to 'GoogleWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, switching to 'GoogleWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
                         _YoursWalk = false;
                         _GoogleWalk = true;
                     }
@@ -159,7 +157,7 @@ namespace PoGo.NecroBot.Logic
                 else
                 {
                     if (_GoogleWalk || _MapZenWalk)
-                        Logging.Logger.Write($"Distance to travel is < 250m, switching back to '{fortTargetEvent.Route}'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        Logging.Logger.Write($"Distance to travel is < {_AutoWalkDist}m, switching back to '{fortTargetEvent.Route}'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
                 }
             }
 

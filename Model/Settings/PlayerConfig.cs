@@ -71,9 +71,14 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 11)]
         public bool AutoWalkAI { get; set; }
 
-        [NecrobotConfig(Description = "Sets the LoadPokeStopsTimer interval(10 - 60 sec)", Position = 12)]
-        [DefaultValue(30)]
+        [NecrobotConfig(Description = "Sets the AutoWalkAI Distance(Default = 250m)", Position = 12)]
+        [DefaultValue(250)]
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 12)]
+        public int AutoWalkDist { get; set; }
+
+        [NecrobotConfig(Description = "Sets the LoadPokeStopsTimer interval(10 - 60 sec)", Position = 13)]
+        [DefaultValue(30)]
+        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate, Order = 13)]
         public int PokeStopsTimer { get; set; }
     }
 }

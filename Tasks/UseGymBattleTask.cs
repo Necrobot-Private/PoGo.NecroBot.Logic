@@ -137,7 +137,6 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static async Task<bool> StartGymAttackLogic(ISession session, FortDetailsResponse fortInfo, GymGetInfoResponse fortDetails, FortData gym, CancellationToken cancellationToken)
         {
-
             var _fortstate = new POGOProtos.Data.Gym.GymState()
             {
                 FortData = gym

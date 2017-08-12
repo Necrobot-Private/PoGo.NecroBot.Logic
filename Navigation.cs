@@ -156,7 +156,7 @@ namespace PoGo.NecroBot.Logic
                 }
                 else //if(distance < _AutoWalkDist && distance > 10)
                 {
-                    if (_GoogleWalk || _MapZenWalk)
+                    if (_YoursWalk)
                     {
                         //var _session = new Session();
                         //var routename = _session.EventDispatcher.GetType(Route);
@@ -168,7 +168,7 @@ namespace PoGo.NecroBot.Logic
                     else
                     {
                         Logging.Logger.Write($"Distance to travel is < {_AutoWalkDist}m, using 'HumanWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
-                        _YoursWalk = true;
+                        _YoursWalk = false;
                         _MapZenWalk = false;
                         _GoogleWalk = false;
                     }

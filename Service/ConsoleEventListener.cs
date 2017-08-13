@@ -265,8 +265,8 @@ namespace PoGo.NecroBot.Logic.Service
 
             if (fortTargetEvent.Distance > 10)
                 Logger.Write(
-                    session.Translation.GetTranslation(TranslationString.EventFortTargeted, Math.Round(fortTargetEvent.Distance),
-                        intTimeForArrival, fortTargetEvent.Route,
+                    session.Translation.GetTranslation(TranslationString.EventFortTargeted, Math.Round(fortTargetEvent.Distance).ToString("0").PadLeft(3, ' '),
+                        intTimeForArrival.ToString("0").PadLeft(3,' '), fortTargetEvent.Route,
                         targetType, fortTargetEvent.Name),
                     LogLevel.Info, ConsoleColor.Gray);
         }

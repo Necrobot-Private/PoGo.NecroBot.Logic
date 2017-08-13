@@ -263,7 +263,7 @@ namespace PoGo.NecroBot.Logic.Service
                     targetType = "POI";
             }
 
-            if (fortTargetEvent.Distance > 10)
+            if (fortTargetEvent.Distance > 15)
                 Logger.Write(
                     session.Translation.GetTranslation(TranslationString.EventFortTargeted, Math.Round(fortTargetEvent.Distance).ToString("0").PadLeft(3, ' '),
                         intTimeForArrival.ToString("0").PadLeft(3,' '), fortTargetEvent.Route,

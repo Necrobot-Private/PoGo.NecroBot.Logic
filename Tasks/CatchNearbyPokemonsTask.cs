@@ -78,8 +78,8 @@ namespace PoGo.NecroBot.Logic.Tasks
             if (priorityPokemon != null)
             {
                 pokemons.Insert(0, priorityPokemon);
-                //await LocationUtils.UpdatePlayerLocationWithAltitude(session,
-                        //new GeoCoordinate(priorityPokemon.Latitude, priorityPokemon.Longitude, session.Client.CurrentAltitude), 0).ConfigureAwait(false); // Set speed to 0 for random speed.
+                await LocationUtils.UpdatePlayerLocationWithAltitude(session,
+                        new GeoCoordinate(priorityPokemon.Latitude, priorityPokemon.Longitude, session.Client.CurrentAltitude), 0).ConfigureAwait(false); // Set speed to 0 for random speed.
                 encounter = await session.Client.Encounter
                     .EncounterPokemon(priorityPokemon.EncounterId, priorityPokemon.SpawnPointId).ConfigureAwait(false);
 

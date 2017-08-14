@@ -97,7 +97,6 @@ namespace PoGo.NecroBot.Logic.Tasks
             await OptimizedRecycleBerries(session, cancellationToken).ConfigureAwait(false);
             await OptimizedRecycleEvoItems(session, cancellationToken).ConfigureAwait(false);
 
-            //await session.Inventory.RefreshCachedInventory().ConfigureAwait(false);
             currentTotalItems = await session.Inventory.GetTotalItemCount().ConfigureAwait(false);
             if ((session.Profile.PlayerData.MaxItemStorage * session.LogicSettings.RecycleInventoryAtUsagePercentage / 100.0f) > currentTotalItems)
                 return;

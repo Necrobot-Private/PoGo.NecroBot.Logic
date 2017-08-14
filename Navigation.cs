@@ -30,7 +30,6 @@ namespace PoGo.NecroBot.Logic
         private List<IWalkStrategy> WalkStrategyQueue { get; set; }
 
         public Dictionary<Type, DateTime> WalkStrategyBlackList = new Dictionary<Type, DateTime>();
-        public FortTargetEvent fortTargetEvent;
 
         private bool _GoogleWalk, _MapZenWalk, _YoursWalk, _GpxPathing, _AutoWalkAI;
         private string _GoogleAPI, _MapZenAPI;
@@ -137,40 +136,31 @@ namespace PoGo.NecroBot.Logic
         private void InitializeWalkStrategies(ILogicSettings logicSettings)
         {
             //AutoWalkAI code???
-            if(_AutoWalkAI)
+            /*if(_AutoWalkAI)
             { 
                 if (distance >= _AutoWalkDist)
                 {
-                    if (_MapZenWalk == false && _MapZenAPI != "")
+                    if (_MapZenWalk && _MapZenAPI != "")
                     {
                         Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, switching to 'MapzenWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
-                        _YoursWalk = false;
-                        _MapZenWalk = true;
                     }
-                    if (_GoogleWalk == false && _GoogleAPI != "")
+                    if (_GoogleWalk && _GoogleAPI != "")
                     {
                         Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, switching to 'GoogleWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
-                        _YoursWalk = false;
-                        _GoogleWalk = true;
+                    }
+                    if (_YoursWalk)
+                    {
+                        Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, switching to 'YoursWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
                     }
                 }
                 else
                 {
-                    if (_GoogleWalk || _MapZenWalk)
+                    if (!_GoogleWalk || !_MapZenWalk || !_YoursWalk)
                     {
-                        string route = null;
-                        try
-                        {
-                            route = fortTargetEvent.Route;
-                        }
-                        catch
-                        {
-                            route = "unnamed route";
-                        }
-                        Logging.Logger.Write($"Distance to travel is < {_AutoWalkDist}m, switching back to '{route}'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        Logging.Logger.Write($"Distance to travel is < {_AutoWalkDist}m, switching back to 'NecroBot Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
                     }
                 }
-            }
+            }*/
 
             WalkStrategyQueue = new List<IWalkStrategy>();
 

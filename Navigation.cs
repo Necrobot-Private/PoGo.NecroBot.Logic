@@ -1,4 +1,4 @@
-﻿#region using directives
+#region using directives
 
 using GeoCoordinatePortable;
 using PoGo.NecroBot.Logic.Event;
@@ -137,41 +137,36 @@ namespace PoGo.NecroBot.Logic
         {
             //AutoWalkAI code???
             if(_AutoWalkAI && distance > 15)
-            { 
+            {
+                _YoursWalk = false; _MapZenWalk = false; _GoogleWalk = false;
                 if (distance >= _AutoWalkDist)
                 {
+                    if (_YoursWalk)
+                    {
+                        Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, switching to 'YoursWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        _YoursWalk = true;
+                    }
                     if (_MapZenWalk && _MapZenAPI != "")
                     {
                         Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, using 'Mapzen Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
-                        _YoursWalk = false;
                         _MapZenWalk = true;
                     }
                     if (_GoogleWalk && _GoogleAPI != "")
                     {
                         Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, using 'Google Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
-                        _YoursWalk = false;
                         _GoogleWalk = true;
                     }
-                    if (_YoursWalk)
-                    {
-                        Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, switching to 'YoursWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
-                    }
                 }
-                else //if(distance < _AutoWalkDist && distance > 10)
+                else
                 {
                     if (_YoursWalk)
                     {
                         Logging.Logger.Write($"Distance to travel is < {_AutoWalkDist}m, using 'NecroBot Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
                         _YoursWalk = true;
-                        _MapZenWalk = false;
-                        _GoogleWalk = false;
                     }
                     else
                     {
                         Logging.Logger.Write($"Distance to travel is < {_AutoWalkDist}m, using 'Human Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
-                        _YoursWalk = false;
-                        _MapZenWalk = false;
-                        _GoogleWalk = false;
                     }
                 }
             }

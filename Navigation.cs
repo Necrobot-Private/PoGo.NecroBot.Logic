@@ -169,7 +169,6 @@ namespace PoGo.NecroBot.Logic
                         _YoursWalk = false;
                         _MapZenWalk = false;
                         _GoogleWalk = false;
-                        Logging.Logger.Write($"Distance to travel is < {_AutoWalkDist}m, switching back to '{route}'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
                     }
                 }
             }

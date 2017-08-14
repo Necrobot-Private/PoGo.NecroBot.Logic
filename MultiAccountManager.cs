@@ -292,7 +292,7 @@ namespace PoGo.NecroBot.Logic
             var pauseTime = session.LogicSettings.MultipleBotConfig.OnLimitPauseTimes;
 
             Logic.Logging.Logger.Write($"All accounts are blocked. None of your accounts are available to switch to, so bot will sleep for {pauseTime} minutes until next account is available to run.");
-            if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
+            if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification)
                 PushNotificationClient.SendNotification(session, "All accounts are blocked.", $"None of your accounts are available to switch to, so bot will sleep for {pauseTime} minutes until next account is available to run.", true).ConfigureAwait(false);
 
             //Switchable += 1;

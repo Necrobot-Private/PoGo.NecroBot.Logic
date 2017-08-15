@@ -119,7 +119,7 @@ namespace PoGo.NecroBot.Logic
 
         private void InitializeWalkStrategies(ILogicSettings logicSettings)
         {
-            //AutoWalkAI code???
+            //AutoWalkAI code
             if (_AutoWalkAI && distance > 15)
             {
                 _YoursWalk = false; _MapZenWalk = false; _GoogleWalk = false;

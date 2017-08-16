@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore.ChangeTracking;
+﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PoGo.NecroBot.Logic.Exceptions;
 using PoGo.NecroBot.Logic.Forms;
 using PoGo.NecroBot.Logic.Logging;
@@ -31,6 +31,10 @@ namespace PoGo.NecroBot.Logic
             _globalSettings = globalSettings;
             MigrateDatabase();
             SyncDatabase(accounts);
+        }
+
+        public MultiAccountManager()
+        {
         }
 
         private LocalView<Account> _localAccounts;

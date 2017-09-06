@@ -222,7 +222,7 @@ namespace PoGo.NecroBot.Logic.Service
             if (fortUsedEvent.Fort.Type == FortType.Checkpoint)
                 Logger.Write(eventMessage, LogLevel.Pokestop);
             else
-                Logger.Write(eventMessage, LogLevel.Gym, ConsoleColor.Cyan); //LogLevel.Pokestop);
+                Logger.Write(eventMessage, LogLevel.GymDisk, ConsoleColor.Cyan); //LogLevel.Pokestop);
         }
 
         private static void HandleEvent(FortFailedEvent fortFailedEvent, ISession session)
@@ -257,7 +257,7 @@ namespace PoGo.NecroBot.Logic.Service
                 targetType = session.Translation.GetTranslation(TranslationString.Gym); // "Gym";
             else if (fortTargetEvent.Type == FortType.Checkpoint)
             {
-                if(fortTargetEvent.Name != "User selected")
+                if (fortTargetEvent.Name != "User selected")
                     targetType = session.Translation.GetTranslation(TranslationString.Pokestop); // "Pokestop";
                 else
                     targetType = "POI";

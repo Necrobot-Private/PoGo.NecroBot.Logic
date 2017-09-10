@@ -232,10 +232,10 @@ namespace PoGo.NecroBot.Logic
             if (_context.Account.Count() == 0)
                 return null;
 
-            if (ignoreBlockCheck)
-                return _context.Account.OrderBy(x => x.Level).ThenBy(x => x.CurrentXp).ThenBy(x => x.AccountActive).FirstOrDefault();
+            if (ignoreBlockCheck) //AccountActive).ThenBy(x => x.
+                return _context.Account.OrderBy(x => x.Level).ThenBy(x => x.CurrentXp).Where(x => x.AccountActive == true).FirstOrDefault();
             else
-                return _context.Account.OrderBy(x => x.Level).ThenBy(x => x.CurrentXp).ThenBy(x => x.AccountActive).ThenBy(x => x.RuntimeTotal).Where(x => x != null && x.ReleaseBlockTime.HasValue && x.ReleaseBlockTime < DateTime.Now.ToUnixTime()).FirstOrDefault();
+                return _context.Account.OrderBy(x => x.AccountActive).ThenBy(x => x.Level).ThenBy(x => x.CurrentXp).ThenBy(x => x.RuntimeTotal).Where(x => x != null && x.ReleaseBlockTime.HasValue && x.ReleaseBlockTime < DateTime.Now.ToUnixTime()).FirstOrDefault();
         }
 
         public bool AllowMultipleBot()

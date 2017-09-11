@@ -83,7 +83,7 @@ namespace PoGo.NecroBot.Logic.State
             CancellationTokenSource = new CancellationTokenSource();
             Forts = new List<FortData>();
             VisibleForts = new List<FortData>();
-            Cache = new MemoryCache("NecroBot2");
+            Cache = new MemoryCache("Necrobot2");
             accounts = new List<AuthConfig>();
             EventDispatcher = new EventDispatcher();
             LogicSettings = logicSettings;
@@ -109,7 +109,8 @@ namespace PoGo.NecroBot.Logic.State
                     Username = settings.Username,
                     AutoExitBotIfAccountFlagged = settings.AutoExitBotIfAccountFlagged,
                     AccountLatitude = settings.AccountLatitude,
-                    AccountLongitude = settings.AccountLongitude
+                    AccountLongitude = settings.AccountLongitude,
+                    AccountActive = settings.AccountActive
                 });
             }
             if (File.Exists("runtime.log"))

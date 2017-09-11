@@ -50,10 +50,10 @@ namespace PoGo.NecroBot.Logic.Model
             AuthType = item.AuthType;
             Password = item.Password;
             Username = item.Username;
-            AutoExitBotIfAccountFlagged = item.AutoExitBotIfAccountFlagged; // string.IsNullOrEmpty(_globalSettings.Auth.CurrentAuthConfig.AutoExitBotIfAccountFlagged.ToString()) ? item.AutoExitBotIfAccountFlagged : _globalSettings.Auth.CurrentAuthConfig.AutoExitBotIfAccountFlagged;
-            AccountLatitude = item.AccountLatitude; // string.IsNullOrEmpty(_globalSettings.Auth.CurrentAuthConfig.AccountLatitude.ToString()) ? item.AccountLatitude : _globalSettings.Auth.CurrentAuthConfig.AccountLatitude;
-            AccountLongitude = item.AccountLongitude; // string.IsNullOrEmpty(_globalSettings.Auth.CurrentAuthConfig.AccountLongitude.ToString()) ? item.AccountLongitude : _globalSettings.Auth.CurrentAuthConfig.AccountLongitude;
-            AccountActive = item.AccountActive; // string.IsNullOrEmpty(_globalSettings.Auth.CurrentAuthConfig.AccountActive.ToString()) ? item.AccountActive : _globalSettings.Auth.CurrentAuthConfig.AccountActive;
+            AutoExitBotIfAccountFlagged = item.AutoExitBotIfAccountFlagged;
+            AccountLatitude = item.AccountLatitude;
+            AccountLongitude = item.AccountLongitude;
+            AccountActive = item.AccountActive;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

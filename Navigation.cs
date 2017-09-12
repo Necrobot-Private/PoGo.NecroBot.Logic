@@ -39,7 +39,7 @@ namespace PoGo.NecroBot.Logic
         {
             _client = client;
 
-            _AutoWalkAI = logicSettings.AutoWalkAI;
+            _AutoWalkAI = _settings.PlayerConfig.AutoWalkAI;
             _AutoWalkDist = logicSettings.AutoWalkDist;
 
             InitializeWalkStrategies(logicSettings);
@@ -99,7 +99,7 @@ namespace PoGo.NecroBot.Logic
             ISession session,
             CancellationToken cancellationToken, double customWalkingSpeed = 0.0)
         {
-            _AutoWalkAI = session.LogicSettings.AutoWalkAI;
+            _AutoWalkAI = _settings.PlayerConfig.AutoWalkAI;
             _AutoWalkDist = session.LogicSettings.AutoWalkDist;
 
             distance = LocationUtils.CalculateDistanceInMeters(session.Client.CurrentLatitude, session.Client.CurrentLongitude,
@@ -123,8 +123,8 @@ namespace PoGo.NecroBot.Logic
             _MapZenWalk = logicSettings.UseMapzenWalk;
             _GoogleWalk = logicSettings.UseGoogleWalk;
 
-            _AutoWalkAI = logicSettings.AutoWalkAI;
-            _AutoWalkDist = logicSettings.AutoWalkDist;
+            _AutoWalkAI = _settings.PlayerConfig.AutoWalkAI;
+            //_AutoWalkDist = logicSettings.AutoWalkDist;
 
             if (_AutoWalkAI)
             {

@@ -31,7 +31,6 @@ namespace PoGo.NecroBot.Logic
 
         public Dictionary<Type, DateTime> WalkStrategyBlackList = new Dictionary<Type, DateTime>();
 
-        public static GlobalSettings _settings;
         private bool _GoogleWalk, _MapZenWalk, _YoursWalk, _AutoWalkAI;
         private double distance;
         private int _AutoWalkDist;

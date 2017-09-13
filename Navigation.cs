@@ -31,6 +31,7 @@ namespace PoGo.NecroBot.Logic
 
         public Dictionary<Type, DateTime> WalkStrategyBlackList = new Dictionary<Type, DateTime>();
 
+        public static GlobalSettings _settings;
         private bool _GoogleWalk, _MapZenWalk, _YoursWalk, _AutoWalkAI;
         private double distance;
         private int _AutoWalkDist;
@@ -39,7 +40,7 @@ namespace PoGo.NecroBot.Logic
         {
             _client = client;
 
-            _AutoWalkAI = _settings.PlayerConfig.AutoWalkAI;
+            _AutoWalkAI = logicSettings.AutoWalkAI;
             _AutoWalkDist = logicSettings.AutoWalkDist;
 
             InitializeWalkStrategies(logicSettings);
@@ -123,8 +124,8 @@ namespace PoGo.NecroBot.Logic
             _MapZenWalk = logicSettings.UseMapzenWalk;
             _GoogleWalk = logicSettings.UseGoogleWalk;
 
-            _AutoWalkAI = _settings.PlayerConfig.AutoWalkAI;
-            //_AutoWalkDist = logicSettings.AutoWalkDist;
+            _AutoWalkAI = logicSettings.AutoWalkAI;
+            _AutoWalkDist = logicSettings.AutoWalkDist;
 
             if (_AutoWalkAI)
             {

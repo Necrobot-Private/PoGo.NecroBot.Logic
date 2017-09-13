@@ -38,7 +38,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             if (duplicatePokemons.Count() > 0)
             {
-                Logging.Logger.Write($"Transferring {duplicatePokemons.Count()} Duplicate pokemon.",Logging.LogLevel.Transfer);
+                Logging.Logger.Write($"Transferring {duplicatePokemons.Count()} Duplicate pokemon.",Logging.LogLevel.Info, System.ConsoleColor.Yellow);
                 await Execute(session, duplicatePokemons, cancellationToken).ConfigureAwait(false);
             }
 
@@ -49,7 +49,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             if (maxPokemonsToTransfer.Count() > 0)
             {
-                Logging.Logger.Write($"Transferring {maxPokemonsToTransfer.Count()} pokemon over max limit.", Logging.LogLevel.Transfer);
+                Logging.Logger.Write($"Transferring {maxPokemonsToTransfer.Count()} pokemon over max limit.", Logging.LogLevel.Info, System.ConsoleColor.Yellow);
                 await Execute(session, maxPokemonsToTransfer, cancellationToken).ConfigureAwait(false);
             }
 
@@ -58,7 +58,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             if (SlashedPokemonsToTransfer.Count() > 0)
             {
-                Logging.Logger.Write($"Transferring {SlashedPokemonsToTransfer.Count()} Slashed pokemon.", Logging.LogLevel.Transfer);
+                Logging.Logger.Write($"Transferring {SlashedPokemonsToTransfer.Count()} Slashed pokemon.", Logging.LogLevel.Info, System.ConsoleColor.Yellow);
                 await Execute(session, SlashedPokemonsToTransfer, cancellationToken).ConfigureAwait(false);
             }
 

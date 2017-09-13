@@ -555,7 +555,7 @@ namespace PoGo.NecroBot.Logic.Service
             if (evolveCountEvent.Evolves>0)
                 Logger.Write(
                     session.Translation.GetTranslation(TranslationString.PkmPotentialEvolveCount, evolveCountEvent.Evolves),
-                    LogLevel.Evolve
+                    LogLevel.Info
             );
         }
 

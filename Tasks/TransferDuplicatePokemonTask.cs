@@ -1,9 +1,10 @@
-﻿#region using directives
+#region using directives
 
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using PoGo.NecroBot.Logic.State;
+using PoGo.NecroBot.Logic.Model.Settings;
 
 #endregion
 
@@ -11,6 +12,8 @@ namespace PoGo.NecroBot.Logic.Tasks
 {
     public class TransferDuplicatePokemonTask : BaseTransferPokemonTask
     {
+        public static GlobalSettings _settings;
+
         public static async Task Execute(ISession session, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -49,7 +52,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             if (maxPokemonsToTransfer.Count() > 0)
             {
-                Logging.Logger.Write($"Transferring {maxPokemonsToTransfer.Count()} pokemon over max limit.", Logging.LogLevel.Info, System.ConsoleColor.Yellow);
+                //Logging.Logger.Write($"Max Duplicate Pokemon Allowed: {_settings.PokemonConfig.KeepMinDuplicatePokemon}. Transferring {maxPokemonsToTransfer.Count()} pokemon over max limit.", Logging.LogLevel.Info, System.ConsoleColor.Yellow);
                 await Execute(session, maxPokemonsToTransfer, cancellationToken).ConfigureAwait(false);
             }
 

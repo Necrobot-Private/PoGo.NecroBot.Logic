@@ -233,9 +233,9 @@ namespace PoGo.NecroBot.Logic
                 return null;
 
             if (ignoreBlockCheck)
-                return _context.Account.OrderBy(x => x.Level).ThenBy(x => x.CurrentXp).Where(x => x.AccountActive == true).FirstOrDefault();
+                return _context.Account.OrderByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).Where(x => x.AccountActive == true).FirstOrDefault();
             else
-                return _context.Account.OrderBy(x => x.AccountActive).ThenBy(x => x.Level).ThenBy(x => x.CurrentXp).ThenBy(x => x.RuntimeTotal).Where(x => x != null && x.ReleaseBlockTime.HasValue && x.ReleaseBlockTime < DateTime.Now.ToUnixTime()).FirstOrDefault();
+                return _context.Account.OrderBy(x => x.AccountActive).ThenByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).ThenBy(x => x.RuntimeTotal).Where(x => x != null && x.ReleaseBlockTime.HasValue && x.ReleaseBlockTime < DateTime.Now.ToUnixTime()).FirstOrDefault();
         }
 
         public bool AllowMultipleBot()
@@ -293,7 +293,7 @@ namespace PoGo.NecroBot.Logic
 
             if (_context.Account.Count() > 0)
             {
-                var runnableAccount = _context.Account.OrderBy(x => x.RuntimeTotal).ThenBy(p => p.AccountActive).ThenBy(p => p.Level).ThenBy(p => p.CurrentXp).FirstOrDefault(p => p != currentAccount);
+                var runnableAccount = _context.Account.OrderByDescending(x => x.RuntimeTotal).ThenBy(x => x.AccountActive).ThenByDescending(p => p.Level).ThenByDescending(p => p.CurrentXp).FirstOrDefault(p => p != currentAccount);
 
                 if (runnableAccount != null)
                     return runnableAccount;
@@ -385,9 +385,7 @@ namespace PoGo.NecroBot.Logic
                 }
             }
 
-            //Accounts.OrderBy(x => x.RuntimeTotal).ThenBy(p => p.Level).ThenBy(p => p.CurrentXp).FirstOrDefault();
-            //Accounts.OrderBy(x => x.RuntimeTotal).ThenBy(p => p.Level).ThenBy(p => p.CurrentXp).Where(p => p.AccountActive == true).FirstOrDefault();
-            foreach (var item in Accounts)
+            foreach (var item in Accounts.OrderByDescending(p => p.Level).ThenByDescending(p => p.CurrentXp))
             {
                 user = string.IsNullOrEmpty(item.Nickname) ? item.Username : item.Nickname;
 

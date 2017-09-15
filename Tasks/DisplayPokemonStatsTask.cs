@@ -21,6 +21,7 @@ namespace PoGo.NecroBot.Logic.Tasks
         public static List<ulong> PokemonId = new List<ulong>();
 
         public static List<ulong> PokemonIdcp = new List<ulong>();
+        private static MultiAccountManager _MultiAccountManager;
 
         public static async Task Execute(ISession session)
         {
@@ -79,7 +80,13 @@ namespace PoGo.NecroBot.Logic.Tasks
                 : await session.Inventory.GetHighestsCp(1000).ConfigureAwait(false);
             if (session.LogicSettings.DumpPokemonStats)
             {
-                const string dumpFileName = "PokeBagStats";
+                _MultiAccountManager = new MultiAccountManager();
+                var account = _MultiAccountManager.GetCurrentAccount();
+                string dumpFileName = account.Nickname; // "-PokeBagStats";
+
+                //If user dump file exists then cancel file dump
+                if (File.Exists(Path.Combine(Path.Combine(session.LogicSettings.ProfilePath, "Dumps"), $"{dumpFileName}-NecroBot2 DumpFile.csv"))) return;
+
                 try
                 {
                     Dumper.ClearDumpFile(session, dumpFileName);
@@ -87,15 +94,18 @@ namespace PoGo.NecroBot.Logic.Tasks
                     string[] data =
                     {
                         "Pokemon",
+                        "Candies",
                         "Slashed",
+                        "Nickname",
                         "Level",
                         "CP",
                         "IV",
+                        "Power Ups",
+                        "Favorite",
                         "Stamina",
                         "Stamina Max",
                         "Move1",
                         "Move2",
-                        "Candies",
                         "Owner Name",
                         "Origin",
                         "Height(M)",
@@ -107,10 +117,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                         "Gyms Attacked",
                         "Gyms Defended",
                         "Creationtimems",
-                        "Power Ups",
-                        "Additional CP Multi",
-                        "Favorite",
-                        "Nickname"
+                        "Add CP Multi"
                     };
                     Dumper.Dump(session, data, dumpFileName);
 
@@ -123,16 +130,19 @@ namespace PoGo.NecroBot.Logic.Tasks
                     {
                         string[] pokemonData =
                         {
-                            session.Translation.GetPokemonTranslation(pokemon.PokemonId),
+                            session.Translation.GetPokemonTranslation(pokemon.PokemonId).Replace(' ', '_'),
+                            session.Inventory.GetCandyCount(pokemon.PokemonId).ToString(), // PokemonInfo.GetCandy(session, pokemon.PokemonId).ToString(),
                             pokemon.IsBad.ToString(),
+                            pokemon.Nickname.Replace(' ', '_'),
                             PokemonInfo.GetLevel(pokemon).ToString(),
                             pokemon.Cp.ToString(),
                             PokemonInfo.CalculatePokemonPerfection(pokemon).ToString(),
+                            pokemon.NumUpgrades.ToString(),
+                            pokemon.Favorite.ToString(),
                             pokemon.Stamina.ToString(),
                             pokemon.StaminaMax.ToString(),
                             pokemon.Move1.ToString(),
                             pokemon.Move2.ToString(),
-                            PokemonInfo.GetCandy(session, pokemon).ToString(),
                             pokemon.OwnerName,
                             pokemon.Origin.ToString(),
                             pokemon.HeightM.ToString(),
@@ -144,10 +154,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                             pokemon.BattlesAttacked.ToString(),
                             pokemon.BattlesDefended.ToString(),
                             pokemon.CreationTimeMs.ToString(),
-                            pokemon.NumUpgrades.ToString(),
-                            pokemon.AdditionalCpMultiplier.ToString(),
-                            pokemon.Favorite.ToString(),
-                            pokemon.Nickname
+                            pokemon.AdditionalCpMultiplier.ToString()
                         };
                         Dumper.Dump(session, pokemonData, dumpFileName);
                     }

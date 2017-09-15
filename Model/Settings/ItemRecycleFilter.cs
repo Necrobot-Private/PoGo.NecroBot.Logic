@@ -19,12 +19,12 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             Value = value;
         }
 
-        [NecrobotConfig(Description ="Item Name")]
+        [NecroBotConfig(Description ="Item Name")]
         [DefaultValue(ItemId.ItemUnknown)]
         [JsonProperty(Required = Required.Always, DefaultValueHandling = DefaultValueHandling.Populate, Order = 1)]
         public ItemId Key { get; set; }
 
-        [NecrobotConfig(Description = "Item Amount to keep")]
+        [NecroBotConfig(Description = "Item Amount to keep")]
         [DefaultValue(0)]
         [Range(0, 999)]
         [JsonProperty(Required = Required.Always, DefaultValueHandling = DefaultValueHandling.Populate, Order = 2)]
@@ -58,12 +58,14 @@ namespace PoGo.NecroBot.Logic.Model.Settings
                 new ItemRecycleFilter(ItemId.ItemNanabBerry, 30),
                 new ItemRecycleFilter(ItemId.ItemWeparBerry, 30),
                 new ItemRecycleFilter(ItemId.ItemPinapBerry, 30),
-                new ItemRecycleFilter(ItemId.ItemRazzBerry, 30),
-                new ItemRecycleFilter(ItemId.ItemDragonScale, 100),
-                new ItemRecycleFilter(ItemId.ItemKingsRock, 100),
-                new ItemRecycleFilter(ItemId.ItemSunStone, 100),
-                new ItemRecycleFilter(ItemId.ItemMetalCoat, 100),
-                new ItemRecycleFilter(ItemId.ItemUpGrade, 100)
+                new ItemRecycleFilter(ItemId.ItemGoldenNanabBerry, 30),
+                new ItemRecycleFilter(ItemId.ItemGoldenPinapBerry, 30),
+                new ItemRecycleFilter(ItemId.ItemGoldenRazzBerry, 30),
+                new ItemRecycleFilter(ItemId.ItemDragonScale, 10),
+                new ItemRecycleFilter(ItemId.ItemKingsRock, 10),
+                new ItemRecycleFilter(ItemId.ItemSunStone, 10),
+                new ItemRecycleFilter(ItemId.ItemMetalCoat, 10),
+                new ItemRecycleFilter(ItemId.ItemUpGrade, 10)
             };
         }
     }

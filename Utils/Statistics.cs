@@ -14,7 +14,6 @@ using PoGo.NecroBot.Logic.State;
 using POGOProtos.Inventory.Item;
 using POGOProtos.Networking.Responses;
 using TinyIoC;
-using PoGo.NecroBot.Logic.Utils;
 
 #endregion
 
@@ -77,7 +76,7 @@ namespace PoGo.NecroBot.Logic.Utils
                 if (config.PokemonSwitch > 0 && config.PokemonSwitch <= TotalPokemons)
                 {
                     session.CancellationTokenSource.Cancel();
-                    //Activate switcher by pokestop
+                    //Activate switcher by Pokemon
                     throw new ActiveSwitchByRuleException()
                     {
                         MatchedRule = SwitchRules.Pokemon,
@@ -88,7 +87,7 @@ namespace PoGo.NecroBot.Logic.Utils
                 if (config.EXPSwitch > 0 && config.EXPSwitch <= TotalExperience)
                 {
                     session.CancellationTokenSource.Cancel();
-                    //Activate switcher by pokestop
+                    //Activate switcher by EXP
                     throw new ActiveSwitchByRuleException()
                     {
                         MatchedRule = SwitchRules.EXP,
@@ -100,8 +99,10 @@ namespace PoGo.NecroBot.Logic.Utils
                 if (!isRandomTimeSet)
                 {
                     Random random = new Random();
-                    newRandomSwitchTime = config.RuntimeSwitch + random.Next((config.RuntimeSwitchRandomTime * -1), config.RuntimeSwitchRandomTime);
+                    newRandomSwitchTime = config.RuntimeSwitch + random.Next((config.RuntimeSwitchRandomTime * -1), config.RuntimeSwitchRandomTime); //config.RuntimeSwitchRandomTime * -1, 0);
                     isRandomTimeSet = true;
+
+                    Logger.Write($"Current Account will run for aprox: {newRandomSwitchTime} Min.",LogLevel.Info, ConsoleColor.Red);
                 }
 
                 var totalMin = (DateTime.Now - _initSessionDateTime).TotalMinutes;
@@ -185,7 +186,7 @@ namespace PoGo.NecroBot.Logic.Utils
                                 }
                             }
 
-                            if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
+                            if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification)
                                 await PushNotificationClient.SendNotification(session, $"{session.Profile.PlayerData.Username} has leveled up.", $"Trainer just reached level {stat.Level}{Rewards}", true).ConfigureAwait(false);
                         }
                     }

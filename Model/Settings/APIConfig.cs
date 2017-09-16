@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
+using PokemonGo.RocketAPI;
 
 namespace PoGo.NecroBot.Logic.Model.Settings
 {
@@ -29,12 +30,12 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate, Order = 4)]
         public bool DiplayHashServerLog { get; set; }
 
-        [DefaultValue("")]
+        [DefaultValue("https://pokehash.buddyauth.com/")]
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate, Order = 5)]
         public string UrlHashServices { get; set; }
 
-        [DefaultValue("")]
-        [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate, Order = 5)]
+        [DefaultValue(Constants.ApiEndPoint)]
+        [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate, Order = 6)]
         public string EndPoint { get; set; }
     }
 }

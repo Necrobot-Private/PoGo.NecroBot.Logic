@@ -30,6 +30,9 @@ namespace PoGo.NecroBot.Logic.Service
     {
         public delegate void HumanWalkEventDelegate(HumanWalkingEvent e);
         public static event HumanWalkEventDelegate HumanWalkEvent;
+        public static ISettings _Settings { get; set; }
+        public static GlobalSettings _GlobalSettings { get; set; }
+        public static Session _session;
 
         private static void HandleEvent(ProfileEvent profileEvent, ISession session)
         {
@@ -202,10 +205,6 @@ namespace PoGo.NecroBot.Logic.Service
                 ),
                 LogLevel.Egg);
         }
-
-        public static ISettings _Settings { get; set; }
-        public static GlobalSettings _GlobalSettings { get; set; }
-        public static Session _session;
 
         private static void HandleEvent(FortUsedEvent fortUsedEvent, ISession session)
         {

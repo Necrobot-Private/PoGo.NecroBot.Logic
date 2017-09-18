@@ -31,7 +31,7 @@ namespace PoGo.NecroBot.Logic.Service
         public delegate void HumanWalkEventDelegate(HumanWalkingEvent e);
         public static event HumanWalkEventDelegate HumanWalkEvent;
         public static ISettings _Settings { get; set; }
-        public static GlobalSettings _GlobalSettings { get; set; }
+        public static GlobalSettings _GlobalSettings;// { get; set; }
         public static Session _session;
 
         private static void HandleEvent(ProfileEvent profileEvent, ISession session)
@@ -230,10 +230,10 @@ namespace PoGo.NecroBot.Logic.Service
             else
                 Logger.Write(eventMessage, LogLevel.GymDisk, ConsoleColor.Cyan); //LogLevel.Pokestop);
 
-            // TheWizard is Working on this. 
-            var globalSettings = new GlobalSettings();
-            globalSettings.Auth.CurrentAuthConfig.AccountLatitude = fortUsedEvent.Latitude;
-            globalSettings.Auth.CurrentAuthConfig.AccountLongitude = fortUsedEvent.Longitude;
+            // TheWizard is Working on this. Don't incorporate till it'd done.
+            //var globalSettings = new GlobalS();
+            _GlobalSettings.Auth.CurrentAuthConfig.AccountLatitude = fortUsedEvent.Latitude;
+            _GlobalSettings.Auth.CurrentAuthConfig.AccountLongitude = fortUsedEvent.Longitude;
 
             //_session.Client.Player.SetCoordinates(fortUsedEvent.Latitude, fortUsedEvent.Longitude, fortUsedEvent.Altitude);
 
@@ -246,7 +246,7 @@ namespace PoGo.NecroBot.Logic.Service
             //_session.Client.Settings.DefaultLatitude = fortUsedEvent.Latitude;
             //_session.Client.Settings.DefaultLongitude = fortUsedEvent.Longitude;
 
-            //globalSettings.Save(Path.Combine(globalSettings.ProfileConfigPath, "config.json"));
+            //_GlobalSettings.Save(Path.Combine(_GlobalSettings.ProfileConfigPath, "config.json"));
         }
 
         private static void HandleEvent(FortFailedEvent fortFailedEvent, ISession session)

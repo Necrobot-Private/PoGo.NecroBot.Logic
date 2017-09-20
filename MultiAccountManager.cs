@@ -233,9 +233,9 @@ namespace PoGo.NecroBot.Logic
                 return null;
 
             if (ignoreBlockCheck)
-                return _context.Account.OrderByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).Where(x => x.AccountActive == true).LastOrDefault();
+                return _context.Account.OrderByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).Where(a => a.AccountActive == true).LastOrDefault();
             else
-                return _context.Account.OrderByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).ThenBy(x => x.RuntimeTotal).Where(x => x != null && x.ReleaseBlockTime.HasValue && x.ReleaseBlockTime < DateTime.Now.ToUnixTime()).FirstOrDefault();
+                return _context.Account.OrderByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).ThenBy(x => x.RuntimeTotal).Where(x => x != null && x.ReleaseBlockTime.HasValue && x.ReleaseBlockTime < DateTime.Now.ToUnixTime()).LastOrDefault();
         }
 
         public bool AllowMultipleBot()

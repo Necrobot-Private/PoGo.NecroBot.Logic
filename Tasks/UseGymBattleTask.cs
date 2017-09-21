@@ -132,14 +132,19 @@ namespace PoGo.NecroBot.Logic.Tasks
                 FortData = gym
             };
 
-            //var raidDetails = await session.Client.Fort.GetRaidDetails(gym.Id, gym.RaidInfo.RaidSeed);
-            //needed for raid battle 
-            var joinLobbyResult = await session.Client.Fort.JoinLobby(gym.Id, gym.RaidInfo.RaidSeed, false).ConfigureAwait(false);
-
-            var defenders = joinLobbyResult.Lobby.Players.Select(x => x.ActivePokemon.PokemonData).ToList(); // _fortstate.Memberships.Select(x => x.PokemonData).ToList();
+            var raidDetails = await session.Client.Fort.GetRaidDetails(gym.Id, gym.RaidInfo.RaidSeed).ConfigureAwait(false);
+            //Check if raid or normal battle
+            if (raidDetails.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
+                return false;
+            else
+            {
+                //Raid modes 
+                //var joinLobbyResult = await session.Client.Fort.JoinLobby(gym.Id, gym.RaidInfo.RaidSeed, false).ConfigureAwait(false);
+            }
+            var defenders = raidDetails.Lobby.Players.Select(x => x.ActivePokemon.PokemonData).ToList(); // _fortstate.Memberships.Select(x => x.PokemonData).ToList();
 
             if (defenders.Count == 0)
-                return true;
+                return false;
 
             if (session.Profile.PlayerData.Team != gym.OwnedByTeam)
             {
@@ -330,7 +335,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             if (_startBattleCounter <= 0)
                 _startBattleCounter = 3;
 
-            await session.Client.Fort.LeaveLobby(gym.Id, gym.RaidInfo.RaidSeed);
+            // if raid - > await session.Client.Fort.LeaveLobby(gym.Id, gym.RaidInfo.RaidSeed);
 
             return true;
         }

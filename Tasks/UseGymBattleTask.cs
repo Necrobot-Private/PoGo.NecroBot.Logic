@@ -152,7 +152,12 @@ namespace PoGo.NecroBot.Logic.Tasks
                     var defenders = _fortstate.Memberships.Select(x => x.PokemonData).ToList();
 
                     if (defenders.Count < 1)
+                    {
+#if DEBUG
+                        Logger.Write("Not Memberships.", LogLevel.Error);
+#endif
                         return false;
+                    }
 
                     if (session.Profile.PlayerData.Team != gym.OwnedByTeam)
                     {
@@ -346,8 +351,11 @@ namespace PoGo.NecroBot.Logic.Tasks
                     return true;
                 }
             }
-            catch
+            catch (Exception e)
             {
+#if DEBUG
+                Logger.Write(e.Message, LogLevel.Error);
+#endif
                 return false;
             }
         }

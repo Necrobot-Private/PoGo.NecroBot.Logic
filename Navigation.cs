@@ -128,19 +128,23 @@ namespace PoGo.NecroBot.Logic
                     if (logicSettings.GoogleApiKey != "")
                     {
                         Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, using 'Google Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        _GoogleWalk = true;
                     }
                     else if (logicSettings.MapzenTurnByTurnApiKey != "")
                     {
                         Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, using 'Mapzen Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        _MapZenWalk = true;
                     }
                     else
                     {
                         Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, switching to 'NecroBot Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        _YoursWalk = true;
                     }
                 }
                 else
                 {
                     Logging.Logger.Write($"Distance to travel is < {_AutoWalkDist}m, using 'NecroBot Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                    _YoursWalk = true;
                 }
             }
 

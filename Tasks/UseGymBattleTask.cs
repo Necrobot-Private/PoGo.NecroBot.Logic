@@ -346,8 +346,11 @@ namespace PoGo.NecroBot.Logic.Tasks
                     return true;
                 }
             }
-            catch
+            catch (Exception e)
             {
+#if DEBUG
+                Logger.Write(e.Message, LogLevel.Error);
+#endif
                 return false;
             }
         }

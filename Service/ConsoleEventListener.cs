@@ -232,8 +232,8 @@ namespace PoGo.NecroBot.Logic.Service
 
             // TheWizard is Working on this. Don't incorporate till it's done.
             //var globalSettings = new GlobalSettings();
-            _settings.Auth.CurrentAuthConfig.AccountLatitude = fortUsedEvent.Latitude;
-            _settings.Auth.CurrentAuthConfig.AccountLongitude = fortUsedEvent.Longitude;
+            //_settings.Auth.CurrentAuthConfig.AccountLatitude = fortUsedEvent.Latitude;
+            //_settings.Auth.CurrentAuthConfig.AccountLongitude = fortUsedEvent.Longitude;
 
             //_session.Client.Player.SetCoordinates(fortUsedEvent.Latitude, fortUsedEvent.Longitude, fortUsedEvent.Altitude);
 
@@ -246,7 +246,7 @@ namespace PoGo.NecroBot.Logic.Service
             //_session.Client.Settings.DefaultLatitude = fortUsedEvent.Latitude;
             //_session.Client.Settings.DefaultLongitude = fortUsedEvent.Longitude;
 
-            _settings.Save(Path.Combine(_settings.ProfileConfigPath, "config.json"));
+            //_settings.Save(Path.Combine(_settings.ProfileConfigPath, "config.json"));
         }
 
         private static void HandleEvent(FortFailedEvent fortFailedEvent, ISession session)

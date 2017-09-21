@@ -132,10 +132,19 @@ namespace PoGo.NecroBot.Logic.Tasks
                 FortData = gym
             };
 
-            var defenders = _fortstate.Memberships.Select(x => x.PokemonData).ToList();
+            var raidDetails = await session.Client.Fort.GetRaidDetails(gym.Id, gym.RaidInfo.RaidSeed).ConfigureAwait(false);
+            //Check if raid or normal battle
+            if (raidDetails.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
+                return false;
+            else
+            {
+                //Raid modes 
+                //var joinLobbyResult = await session.Client.Fort.JoinLobby(gym.Id, gym.RaidInfo.RaidSeed, false).ConfigureAwait(false);
+            }
+            var defenders = raidDetails.Lobby.Players.Select(x => x.ActivePokemon.PokemonData).ToList(); // _fortstate.Memberships.Select(x => x.PokemonData).ToList();
 
             if (defenders.Count == 0)
-                return true;
+                return false;
 
             if (session.Profile.PlayerData.Team != gym.OwnedByTeam)
             {
@@ -325,6 +334,8 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             if (_startBattleCounter <= 0)
                 _startBattleCounter = 3;
+
+            // if raid - > await session.Client.Fort.LeaveLobby(gym.Id, gym.RaidInfo.RaidSeed);
 
             return true;
         }
@@ -949,7 +960,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                         TimedLog("Start making attack");
                         long timeBefore = DateTime.UtcNow.ToUnixTime();
-                        attackResult = await session.Client.Fort.GymBattleAttak(gym.Id, startResponse.Battle.BattleId, attackActionz, a2, timeBefore).ConfigureAwait(false);
+                        attackResult = await session.Client.Fort.GymBattleAttak(gym.Id, startResponse.Battle.BattleId, attackActionz, a2, serverMs).ConfigureAwait(false);
                         long timeAfter = DateTime.UtcNow.ToUnixTime();
                         TimedLog(string.Format("Finished making attack call: {0}", timeAfter - timeBefore));
 

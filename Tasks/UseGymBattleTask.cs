@@ -949,7 +949,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                         TimedLog("Start making attack");
                         long timeBefore = DateTime.UtcNow.ToUnixTime();
-                        attackResult = await session.Client.Fort.GymBattleAttak(gym.Id, startResponse.Battle.BattleId, attackActionz, a2).ConfigureAwait(false);
+                        attackResult = await session.Client.Fort.GymBattleAttak(gym.Id, startResponse.Battle.BattleId, attackActionz, a2, timeBefore).ConfigureAwait(false);
                         long timeAfter = DateTime.UtcNow.ToUnixTime();
                         TimedLog(string.Format("Finished making attack call: {0}", timeAfter - timeBefore));
 

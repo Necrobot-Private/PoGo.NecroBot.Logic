@@ -1156,7 +1156,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
                                     await PushNotificationClient.SendNotification(session, "Gym Battle", $"Our attack timed out...:", true).ConfigureAwait(false);
                                 await Task.Delay(1000).ConfigureAwait(false);
-                                return lastActions;
+                                continue;// return lastActions;
                             case BattleState.StateUnset:
                                 Logger.Write($"State was unset?: {attackResult}");
                                 return lastActions;
@@ -1173,7 +1173,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     }
                     else
                     {
-                        Logger.Write($"Unexpected attack result:\n{attackResult}");
+                        Logger.Write($"Unexpected attack result: {attackResult}");
                         TimedLog("Attack: " + string.Join(Environment.NewLine, attackActionz), true);
                         break;
                     }

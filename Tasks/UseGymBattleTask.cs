@@ -1156,6 +1156,9 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
                                     await PushNotificationClient.SendNotification(session, "Gym Battle", $"Our attack timed out...:", true).ConfigureAwait(false);
                                 await Task.Delay(1000).ConfigureAwait(false);
+                                Logger.Write($"Try again...:");
+                                var fortInfo = await session.Client.Fort.GetFort(fort.Id, fort.Latitude, fort.Longitude).ConfigureAwait(false);
+                                await Execute(session, session.CancellationTokenSource.Token, fort, fortInfo).ConfigureAwait(false);
                                 break;// return lastActions;
                             case BattleState.StateUnset:
                                 Logger.Write($"State was unset?: {attackResult}");

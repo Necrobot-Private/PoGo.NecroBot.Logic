@@ -128,9 +128,38 @@ namespace PoGo.NecroBot.Logic.Tasks
             {
                 if (gym.RaidInfo != null)
                 {
+                    DateTime expires = new DateTime(0);
+                    TimeSpan time = new TimeSpan(0);
+
+                    if (gym.RaidInfo.RaidBattleMs > DateTime.UtcNow.ToUnixTime())
+                    {
+                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(gym.RaidInfo.RaidBattleMs);
+                        time = expires - DateTime.UtcNow;
+                        if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
+                        {
+                            string str = $"Next RAID starts in: {time.Hours:00}h:{time.Minutes:00}m\nat: {(DateTime.Now + time).Hour:00}:{(DateTime.Now + time).Minute:00} Local time";
+                            Logger.Write($"{str}.", LogLevel.Gym);
+                        }
+                    }
+
                     if (gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
                     {
                         //Raid modes 
+                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(gym.RaidInfo.RaidEndMs);
+                        time = expires - DateTime.UtcNow;
+                        if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
+                        {
+                            string boss = $"Boss: {session.Translation.GetPokemonTranslation(gym.RaidInfo.RaidPokemon.PokemonId)} CP: {gym.RaidInfo.RaidPokemon.Cp}";
+                            string str = $"Local RAID ends in: {time.Hours:00}h:{time.Minutes:00}m\nat: {(DateTime.Now + time).Hour:00}:{(DateTime.Now + time).Minute:00} Local time\n\r{boss}";
+                            Logger.Write($"{str}.", LogLevel.Gym);
+
+                            //for dev
+                            Logger.Write("Raid boos is present. Raids battle not yet released.", LogLevel.Gym, ConsoleColor.Red);
+                            return false;
+                        }
+
+                        // new code or new task....
+
                         //var raidDetails = await session.Client.Fort.GetRaidDetails(gym.Id, gym.RaidInfo.RaidSeed).ConfigureAwait(false);
                         //var joinLobbyResult = await session.Client.Fort.JoinLobby(gym.Id, gym.RaidInfo.RaidSeed, false).ConfigureAwait(false);
                         //var setLobbyVisibility = await session.Client.Fort.SetLobbyVisibility(gym.Id, gym.RaidInfo.RaidSeed);
@@ -139,11 +168,17 @@ namespace PoGo.NecroBot.Logic.Tasks
                         //var attackRaid = await session.Client.Fort.AttackRaidBattle(gym.Id, gym.RaidInfo.RaidSeed).ConfigureAwait(false);
                         //var leaveLobbyResult = await session.Client.Fort.LeaveLobby(gym.Id, gym.RaidInfo.RaidSeed);
                         //
+                    }
 
-#if DEBUG
-                        Logger.Write("Raid boos is present.", LogLevel.Error);
-#endif
-                        return false;
+                    if (gym.RaidInfo.RaidSpawnMs > DateTime.UtcNow.ToUnixTime())
+                    {
+                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(gym.RaidInfo.RaidSpawnMs);
+                        time = expires - DateTime.UtcNow;
+                        if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
+                        {
+                            Logger.Write("Raid battle is runing...", LogLevel.Gym);
+                            return false;
+                        }
                     }
                 }
             }
@@ -1121,7 +1156,10 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
                                     await PushNotificationClient.SendNotification(session, "Gym Battle", $"Our attack timed out...:", true).ConfigureAwait(false);
                                 await Task.Delay(1000).ConfigureAwait(false);
-                                return lastActions;
+                                Logger.Write($"Try again...:");
+                                var fortInfo = await session.Client.Fort.GetFort(fort.Id, fort.Latitude, fort.Longitude).ConfigureAwait(false);
+                                await Execute(session, session.CancellationTokenSource.Token, fort, fortInfo).ConfigureAwait(false);
+                                break;// return lastActions;
                             case BattleState.StateUnset:
                                 Logger.Write($"State was unset?: {attackResult}");
                                 return lastActions;
@@ -1138,7 +1176,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     }
                     else
                     {
-                        Logger.Write($"Unexpected attack result:\n{attackResult}");
+                        Logger.Write($"Unexpected attack result: {attackResult}");
                         TimedLog("Attack: " + string.Join(Environment.NewLine, attackActionz), true);
                         break;
                     }

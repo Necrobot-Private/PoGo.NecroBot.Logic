@@ -273,6 +273,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                         isVictory = false;
                         break;
                     case BattleState.Victory:
+                        isVictory = true;
                         break;
                     default:
                         Logger.Write($"Unhandled result starting gym battle:\n{result}");

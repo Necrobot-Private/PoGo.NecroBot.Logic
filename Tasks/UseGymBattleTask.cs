@@ -99,6 +99,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 }
                                 session.GymState.BerriesRound++;
                                 //Review this....
+                                return false;
                                 //if (session.GymState.BerriesRound <= session.LogicSettings.GymConfig.MaxBerriesRoundsOnOneGym)
                                 //    return await StartGymAttackLogic(session, fortInfo, fortDetails, gym, cancellationToken).ConfigureAwait(false);
                             }

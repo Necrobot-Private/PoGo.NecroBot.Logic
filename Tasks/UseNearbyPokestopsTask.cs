@@ -69,26 +69,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 var fortInfo = pokeStop.Id.StartsWith(SetMoveToTargetTask.TARGET_ID) ? SetMoveToTargetTask.FakeFortInfo(pokeStop) : await session.Client.Fort.GetFort(pokeStop.Id, pokeStop.Latitude, pokeStop.Longitude).ConfigureAwait(false);
                 await WalkingToPokeStop(session, cancellationToken, pokeStop, fortInfo).ConfigureAwait(false);
                 await DoActionAtPokeStop(session, cancellationToken, pokeStop, fortInfo).ConfigureAwait(false);
-
-                if (fortInfo.Type == FortType.Gym)
-                {
-                    bool gymAttackSucceeded = await UseGymBattleTask.Execute(session, cancellationToken, pokeStop, fortInfo).ConfigureAwait(false);
-
-                    if (gymAttackSucceeded &&
-                        (pokeStop.OwnedByTeam == session.Profile.PlayerData.Team || session.GymState.CapturedGymId.Equals(fortInfo.FortId)) &&
-                        session.LogicSettings.GymConfig.Enable &&
-                        session.LogicSettings.GymConfig.EnableGymBerries)
-                    {
-                        if (string.IsNullOrEmpty(session.GymState.BerriesGymId) || !session.GymState.BerriesGymId.Equals(fortInfo.FortId))
-                        {
-                            session.GymState.BerriesGymId = fortInfo.FortId;
-                            session.GymState.BerriesRound = 0;
-                        }
-                        session.GymState.BerriesRound++;
-                        if (session.GymState.BerriesRound <= session.LogicSettings.GymConfig.MaxBerriesRoundsOnOneGym)
-                            continue;
-                    }
-                }
+                await UseGymBattleTask.Execute(session, cancellationToken, pokeStop, fortInfo).ConfigureAwait(false);
 
                 if (!await SetMoveToTargetTask.IsReachedDestination(pokeStop, session, cancellationToken).ConfigureAwait(false))
                 {
@@ -210,27 +191,11 @@ namespace PoGo.NecroBot.Logic.Tasks
                 //TODO : A logic need to be add for handle this  case?
             };
 
-            var deployedPokemons = await session.Inventory.GetDeployedPokemons().ConfigureAwait(false);
-
-            //NOTE : This code is killing perfomance of BOT if GYM is turn on, need to refactor to avoid this hummer call API
+                   //NOTE : This code is killing perfomance of BOT if GYM is turn on, need to refactor to avoid this hummer call API
 
             var forts = session.Forts
                 .Where(p => p.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime())
-                .Where(f => f.Type == FortType.Checkpoint ||
-                       (session.LogicSettings.GymConfig.Enable && (
-                            UseGymBattleTask.CanAttackGym(session, f, deployedPokemons) ||
-                            UseGymBattleTask.CanBerrieGym(session, f, deployedPokemons) ||
-                            UseGymBattleTask.CanDeployToGym(session, f, deployedPokemons))))
-                .ToList();
-
-            if (session.LogicSettings.GymConfig.Enable &&
-                ((session.LogicSettings.GymConfig.EnableAttackGym && forts.Where(w => w.Type == FortType.Gym && UseGymBattleTask.CanAttackGym(session, w, deployedPokemons)).Count() == 0) ||
-                (session.LogicSettings.GymConfig.EnableGymBerries && forts.Where(w => w.Type == FortType.Gym && UseGymBattleTask.CanBerrieGym(session, w, deployedPokemons)).Count() == 0)
-                ))
-            {
-                //Logger.Write("No usable gym found. Trying to refresh list.", LogLevel.Gym, ConsoleColor.Magenta);
-                await GetPokeStops(session).ConfigureAwait(false);
-            }
+                .Where(f => f.Type == FortType.Checkpoint || f.Type == FortType.Gym).ToList();
 
             forts = forts.OrderBy(
                         p =>
@@ -265,7 +230,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                 if (session.LogicSettings.GymConfig.PrioritizeGymWithFreeSlot)
                 {
-                    var freeSlots = gyms.Where(w => w.OwnedByTeam == session.Profile.PlayerData.Team && UseGymBattleTask.CanDeployToGym(session, w, deployedPokemons));
+                    var freeSlots = gyms.Where(w => w.OwnedByTeam == session.Profile.PlayerData.Team && UseGymBattleTask.CanDeployToGym(w));
                     if (freeSlots.Count() > 0)
                         return freeSlots.First();
                 }
@@ -365,7 +330,6 @@ namespace PoGo.NecroBot.Logic.Tasks
                 }
             }
         }
-
         private static int softbanCount = 0;
 
         public static async Task FarmPokestop(ISession session, FortData pokeStop, FortDetailsResponse fortInfo, CancellationToken cancellationToken, bool doNotRetry = false)

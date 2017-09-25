@@ -278,6 +278,8 @@ namespace PoGo.NecroBot.Logic.State
                 GymGetInfo = task;
                 LastCall = DateTime.UtcNow;
             }
+            else
+                GymGetInfo = new GymGetInfoResponse();
         }
     }
 }

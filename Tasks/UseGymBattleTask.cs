@@ -1043,11 +1043,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                                     }
                                     if (informDie)
                                     {
-<<<<<<< HEAD
                                         Logger.Write(string.Format("{0} has fainted in battle, New attacker is: {1} ({2} CP)", attacker.PokemonId,attacker.PokemonId, attacker.Cp), LogLevel.Info, ConsoleColor.Magenta);
-=======
-                                        Logger.Write(string.Format("Our Pokemon has fainted in battle, our new attacker is: {0} ({1} CP)", attacker.PokemonId, attacker.Cp), LogLevel.Gym, ConsoleColor.Magenta);
->>>>>>> refs/remotes/TheUnnamedOrganisation/master
                                         Logger.Write("");
                                     }
                                     if (extraWait)
@@ -1076,12 +1072,12 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                                 if(BattleTimer.TotalSeconds == 100)
                                 {
-                                    var defenders = fortDetails.GymStatusAndDefenders.GymDefender.Select(x => x.MotivatedPokemon.Pokemon).ToList();
-                                    if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                                        await PushNotificationClient.SendNotification(session, $"Gym Battle Started",
-                                                                                               $"Defenders: {string.Join(", ", defenders.Select(x => x.PokemonId.ToString()))}" +
-                                                                                               $"Defender: {defender.PokemonId.ToString()} | HP: {attackResult.BattleUpdate.ActiveDefender.CurrentHealth} | Lvl: {attackResult.BattleUpdate.ActiveDefender.PokemonData.Level()} | CP: {attackResult.BattleUpdate.ActiveDefender.PokemonData.CP()}\n" +
-                                                                                               $"Attacker: {attacker.PokemonId.ToString()} | HP: {attackResult.BattleUpdate.ActiveAttacker.CurrentHealth} | Lvl: {attackResult.BattleUpdate.ActiveAttacker.PokemonData.Level()} | CP: {attackResult.BattleUpdate.ActiveAttacker.PokemonData.CP()}", true).ConfigureAwait(false);
+                                    var defenders = _gymDetails.GymStatusAndDefenders.GymDefender.Select(x => x.MotivatedPokemon.Pokemon).ToList();
+                                    if (_session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
+                                        await PushNotificationClient.SendNotification(_session, $"Gym Battle Started",
+                                                                                                $"Defenders: {string.Join(", ", defenders.Select(x => x.PokemonId.ToString()))}" +
+                                                                                                $"Defender: {defender.PokemonId.ToString()} | HP: {attackResult.BattleUpdate.ActiveDefender.CurrentHealth} | Lvl: {attackResult.BattleUpdate.ActiveDefender.PokemonData.Level()} | CP: {attackResult.BattleUpdate.ActiveDefender.PokemonData.CP()}\n" +
+                                                                                                $"Attacker: {attacker.PokemonId.ToString()} | HP: {attackResult.BattleUpdate.ActiveAttacker.CurrentHealth} | Lvl: {attackResult.BattleUpdate.ActiveAttacker.PokemonData.Level()} | CP: {attackResult.BattleUpdate.ActiveAttacker.PokemonData.CP()}", true).ConfigureAwait(false);
                                 }
 
                                 Logger.Write($"Battle Timer: {100 - BattleTimer.TotalSeconds,3:##0} Sec remaining.", LogLevel.Info, ConsoleColor.White);
@@ -1093,21 +1089,10 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 Logger.Write($"We have been defeated... {attackResult}");
                                 return lastActions;
                             case BattleState.TimedOut:
-<<<<<<< HEAD
-                                Logger.Write($"Our attack timed out...");
-                                if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                                    await PushNotificationClient.SendNotification(session, "Gym Battle", $"Our attack timed out...", true).ConfigureAwait(false);
-                                await Task.Delay(1000).ConfigureAwait(false);
-                                Logger.Write($"Trying again...");
-                                var fortInfo = await session.Client.Fort.GetFort(fort.Id, fort.Latitude, fort.Longitude).ConfigureAwait(false);
-                                await Execute(session, session.CancellationTokenSource.Token, fort, fortInfo).ConfigureAwait(false);
-                                return lastActions;//break;
-=======
                                 Logger.Write($"Our attack timed out...:");
                                 if (_session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
                                     await PushNotificationClient.SendNotification(_session, "Gym Battle", $"Our attack timed out...:", true).ConfigureAwait(false);
                                 return lastActions;
->>>>>>> refs/remotes/TheUnnamedOrganisation/master
                             case BattleState.StateUnset:
                                 Logger.Write($"State was unset?: {attackResult}");
                                 return lastActions;

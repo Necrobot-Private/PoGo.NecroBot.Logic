@@ -91,61 +91,43 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate)]
         public double ButNotLessThanDefenderPercent { get; set; }
 
-        [NecroBotConfig(Description = "Exclude these skills in gym fight", Position = 14)]
-        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public ICollection<KeyValuePair<PokemonId, PokemonMove>> NotUsedSkills = GetDefaults();
-
-        [NecroBotConfig(Description = "Use Pokemon to attack only by their CP", Position = 15)]
+        [NecroBotConfig(Description = "Use Pokemon to attack only by their CP", Position = 14)]
         [DefaultValue(true)]
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate)]
         public bool UsePokemonToAttackOnlyByCp { get; set; }
 
-        [NecroBotConfig(Description = "List of pokemon that bot won't use in gym battles or deploys", Position = 16)]
+        [NecroBotConfig(Description = "List of pokemon that bot won't use in gym battles or deploys", Position = 15)]
         [DefaultValue("Kangaskhan;Tauros;MrMime;Farfetchd")]
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Ignore)]
         public List<PokemonId> ExcludeForGyms { get; set; }
 
-        [NecroBotConfig(Description = "Do not use dodge in gyms", Position = 17)]
+        [NecroBotConfig(Description = "Do not use dodge in gyms", Position = 16)]
         [DefaultValue(false)]
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate)]
         public bool DontUseDodge { get; set; }
 
-        [NecroBotConfig(Description = "Minimum revive potions to use gym module", Position = 18)]
+        [NecroBotConfig(Description = "Minimum revive potions to use gym module", Position = 17)]
         [DefaultValue(5)]
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate)]
         public int MinRevivePotions { get; set; }
 
-        [NecroBotConfig(Description = "Prioritize Gym with free slot", Position = 19)]
+        [NecroBotConfig(Description = "Prioritize Gym with free slot", Position = 18)]
         [DefaultValue(true)]
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate)]
         public bool PrioritizeGymWithFreeSlot { get; set; }
 
-        [NecroBotConfig(Description = "Save Max Revives", Position = 20)]
+        [NecroBotConfig(Description = "Save Max Revives", Position = 19)]
         [DefaultValue(true)]
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate)]
         public bool SaveMaxRevives { get; set; }
 
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        [NecroBotConfig(Description = "List of Defenders to use for Gyms", Position = 21)]
+        [NecroBotConfig(Description = "List of Defenders to use for Gyms", Position = 20)]
         public List<TeamMemberConfig> Defenders { get; set; } = TeamMemberConfig.GetDefaultDefenders();
 
         [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        [NecroBotConfig(Description = "List of Attackers to use for Gyms", Position = 22)]
+        [NecroBotConfig(Description = "List of Attackers to use for Gyms", Position = 21)]
         public List<TeamMemberConfig> Attackers { get; set; } = TeamMemberConfig.GetDefaultAttackers();
-
-        private static ICollection<KeyValuePair<PokemonId, PokemonMove>> GetDefaults()
-        {
-            return new List<KeyValuePair<PokemonId, PokemonMove>>()
-            {
-                new KeyValuePair<PokemonId, PokemonMove>( PokemonId.Snorlax, PokemonMove.HyperBeam ),
-                new KeyValuePair<PokemonId, PokemonMove>( PokemonId.Dragonite, PokemonMove.HyperBeam ),
-                new KeyValuePair<PokemonId, PokemonMove>( PokemonId.Lapras, PokemonMove.Blizzard ),
-                new KeyValuePair<PokemonId, PokemonMove>( PokemonId.Cloyster, PokemonMove.Blizzard ),
-                new KeyValuePair<PokemonId, PokemonMove>( PokemonId.Flareon, PokemonMove.FireBlast ),
-                new KeyValuePair<PokemonId, PokemonMove>( PokemonId.Gyarados, PokemonMove.HydroPump ),
-                new KeyValuePair<PokemonId, PokemonMove>( PokemonId.Exeggutor, PokemonMove.SolarBeam ),
-            };
-        }
     }
 
     [JsonObject(Description = "", ItemRequired = Required.DisallowNull)]

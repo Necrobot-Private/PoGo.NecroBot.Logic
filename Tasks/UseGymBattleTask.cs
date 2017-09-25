@@ -39,17 +39,17 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         public static int MaxPlayers = 6;
 
-        public static async Task Execute(ISession session, CancellationToken cancellationToken, FortData gym, FortDetailsResponse fortInfo)
+        public static async Task Execute(ISession session, CancellationToken cancellationToken, FortData gym, FortDetailsResponse fortInfo, GymGetInfoResponse fortDetails)
         {
             cancellationToken.ThrowIfCancellationRequested();
             TinyIoC.TinyIoCContainer.Current.Resolve<MultiAccountManager>().ThrowIfSwitchAccountRequested();
  
             if (!session.LogicSettings.GymConfig.Enable || gym.Type != FortType.Gym) return;
+
+             _session = session;
             _gymInfo = fortInfo;
             _gym = gym;
-            _session = session;
-            _gymDetails = session.GymState.GymGetInfo(session, gym);
-
+            _gymDetails = fortDetails;
             _deployedPokemons = await session.Inventory.GetDeployedPokemons().ConfigureAwait(false);
 
             if (session.GymState.MoveSettings == null)
@@ -60,6 +60,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             await session.GymState.LoadMyPokemons(session).ConfigureAwait(false);
 
             var distance = session.Navigation.WalkStrategy.CalculateDistance(session.Client.CurrentLatitude, session.Client.CurrentLongitude, gym.Latitude, gym.Longitude);
+
             if (fortInfo != null)
             {
                 session.EventDispatcher.Send(new GymWalkToTargetEvent()
@@ -100,7 +101,8 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                     if (CanAttackRaid())
                     {
-                        StartRaidAttackLogic();
+                        //Not released yet!
+                        //StartRaidAttackLogic();
                     }
                 }
                 else
@@ -119,7 +121,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             //Check if raid or normal battle
             try
             {
-                if (_gym.RaidInfo != null)
+                if (_gym?.RaidInfo != null)
                 {
                     DateTime expires = new DateTime(0);
                     TimeSpan time = new TimeSpan(0);
@@ -176,9 +178,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             }
             catch (Exception ex)
             {
-#if DEBUG
                 Logger.Write(ex.Message, LogLevel.Gym, ConsoleColor.Red);
-#endif
             }
         }
 
@@ -335,21 +335,21 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             if (isVictory)
             {
-                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo).ConfigureAwait(false);
+                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
             }
 
             if (isFailedTimeOut && _startBattleCounter > 0)
             {
                 Logger.Write("TimeOut to try again (10 sec)");
                 await Task.Delay(10000).ConfigureAwait(false);
-                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo).ConfigureAwait(false);
+                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
             }
 
             if (isFailedToStart && _startBattleCounter > 0)
             {
                 Logger.Write("Waiting extra time to try again (10 sec)");
                 await Task.Delay(10000).ConfigureAwait(false);
-                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo).ConfigureAwait(false);
+                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
             }
 
             var bAction = battleActions.LastOrDefault();
@@ -358,7 +358,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 {
                     if (battleActions.Exists(p => p.Type == BattleActionType.ActionVictory))
                     {
-                        await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo).ConfigureAwait(false);
+                        await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
                     }
                 }
 
@@ -386,7 +386,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                         catch (APIBadRequestException)
                         {
                             Logger.Write("Failed to deploy pokemon. Trying again...", LogLevel.Gym, ConsoleColor.Magenta);
-                            await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo).ConfigureAwait(false);
+                            await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
                             return;
                         }
                         if (response?.Result == GymDeployResponse.Types.Result.Success)
@@ -1169,8 +1169,6 @@ namespace PoGo.NecroBot.Logic.Tasks
                 bool skipDodge = ((lastSpecialAttack?.DurationMs ?? 0) < normalMove.DurationMs + 550) || _session.LogicSettings.GymConfig.DontUseDodge; //if our normal attack is too slow and defender special is too fast so we should to only do dodge all the time then we totally skip dodge
 
                 bool canDoSpecialAttack = Math.Abs(specialMove.EnergyDelta) <= energy && (!(_session.GymState.TimeToDodge > now.ToUnixTime() && _session.GymState.TimeToDodge < now.ToUnixTime() + specialMove.DurationMs) || skipDodge);
-                if (_session.LogicSettings.GymConfig.NotUsedSkills.Any(a => a.Key == attacker.PokemonId && a.Value == specialMove.MovementId))
-                    canDoSpecialAttack = false;
 
                 bool canDoAttack = !canDoSpecialAttack && (!(_session.GymState.TimeToDodge > now.ToUnixTime() && _session.GymState.TimeToDodge < now.ToUnixTime() + normalMove.DurationMs) || skipDodge);
 
@@ -1317,17 +1315,11 @@ namespace PoGo.NecroBot.Logic.Tasks
                 if (!_session.LogicSettings.GymConfig.EnableAttackGym)
                     return false;
 
-                if (_gym.OwnedByTeam == _session.Profile.PlayerData.Team)
-                    return false;
-
                 if (_gym?.RaidInfo != null)
                 {
                     if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
                         return false;
                 }
-
-                if (_session.GymState.CapturedGymId.Equals(_gym.Id))
-                    _gym.OwnedByTeam = _session.Profile.PlayerData.Team;
             }
             catch (Exception ex)
             {
@@ -1339,42 +1331,12 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static bool CanAttackRaid()
         {
-            bool result = false;
-            try
-            {
-                if (_gym?.RaidInfo != null)
-                {
-                    if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
-                        result = true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Write(string.Format("{0} -> {1} -> {2}", ex.Message, string.Join(", ", _deployedPokemons), _gym), LogLevel.Gym, ConsoleColor.Red);
-                result = false;
-            }
-            return result;
+            return false;
         }
 
         private static bool CanBerrieGym()
         {
-            try
-            {
-                if (!_session.LogicSettings.GymConfig.EnableGymBerries)
-                    return false;
-
-                if (_session.GymState.CapturedGymId.Equals(_gym.Id))
-                    _gym.OwnedByTeam = _session.Profile.PlayerData.Team;
-
-                if (string.IsNullOrEmpty(_session.GymState.BerriesGymId) || !_session.GymState.BerriesGymId.Equals(_gym.Id))
-                    _session.GymState.BerriesGymId = _gym.Id;
-            }
-            catch (Exception ex)
-            {
-                Logger.Write(string.Format("{0} -> {1} -> {2}", ex.Message, string.Join(", ", _deployedPokemons), _gym), LogLevel.Gym, ConsoleColor.Red);
-                return false;
-            }
-            return true;
+            return false;
         }
 
         private static bool CanDeployToGym()

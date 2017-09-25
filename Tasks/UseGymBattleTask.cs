@@ -37,19 +37,18 @@ namespace PoGo.NecroBot.Logic.Tasks
         private static FortData _gym { get; set; }
         private static ISession _session;
 
+        public static int MaxPlayers = 6;
+
         public static async Task Execute(ISession session, CancellationToken cancellationToken, FortData gym, FortDetailsResponse fortInfo)
         {
             cancellationToken.ThrowIfCancellationRequested();
             TinyIoC.TinyIoCContainer.Current.Resolve<MultiAccountManager>().ThrowIfSwitchAccountRequested();
-
+ 
             if (!session.LogicSettings.GymConfig.Enable || gym.Type != FortType.Gym) return;
             _gymInfo = fortInfo;
             _gym = gym;
             _session = session;
-            _gymDetails = session.GymState.GymGetInfo(session, gym, true);
-
-            if (_gymDetails.Result != GymGetInfoResponse.Types.Result.Success)
-                return;
+            _gymDetails = session.GymState.GymGetInfo(session, gym);
 
             _deployedPokemons = await session.Inventory.GetDeployedPokemons().ConfigureAwait(false);
 
@@ -368,7 +367,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static async Task DeployPokemonToGym()
         {
-           var availableSlots = 6 - _gymDetails.GymStatusAndDefenders.GymDefender.Count();
+           var availableSlots = MaxPlayers - _gymDetails.GymStatusAndDefenders.GymDefender.Count();
 
             if (availableSlots > 0)
             {
@@ -411,7 +410,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             else
             {
                 int allCp = GetGymAllCpOnGym();
-                string message = string.Format("No FREE slots in GYM: {0}/6 (All Cp: {1})", _gymDetails.GymStatusAndDefenders.GymDefender.Count(), allCp);
+                string message = string.Format("No FREE slots in GYM: {0}/{1} (All Cp: {2})", _gymDetails.GymStatusAndDefenders.GymDefender.Count(), MaxPlayers, allCp);
                 Logger.Write(message, LogLevel.Gym, ConsoleColor.White);
             }
         }
@@ -438,7 +437,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             }
             else
             {
-                while (attackers.Count() < 6)
+                while (attackers.Count() < MaxPlayers)
                 {
                     foreach (var defender in defenders)
                     {
@@ -450,7 +449,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                             //{
                             attackers.Add(attacker);
                             _session.GymState.AddToTeam(_session, attacker);
-                            if (attackers.Count == 6)
+                            if (attackers.Count == MaxPlayers)
                                 break;
                             //}
                         }
@@ -551,7 +550,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     )
                 .Select(s => s.Data)
                 .OrderByDescending(o => o.Cp)
-                .Take(6 - myTeam.Count());
+                .Take(MaxPlayers - myTeam.Count());
             Logger.Write("Best others are: " + string.Join(", ", data.Select(s => s.PokemonId)), LogLevel.Gym, ConsoleColor.White);
             return data;
         }
@@ -1312,7 +1311,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 if (_gym.OwnedByTeam == _session.Profile.PlayerData.Team)
                     return false;
 
-                if (_gym.RaidInfo != null)
+                if (_gym?.RaidInfo != null)
                 {
                     if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
                         return false;
@@ -1334,7 +1333,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             bool result = false;
             try
             {
-                if (_gym.RaidInfo != null)
+                if (_gym?.RaidInfo != null)
                 {
                     if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
                         result = true;
@@ -1376,7 +1375,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 if (_deployedPokemons.Any(a => a.DeployedFortId.Equals(_gym.Id)))
                     return false;
 
-                if (_gymDetails.GymStatusAndDefenders.GymDefender.Count() == 6)
+                if (_gymDetails.GymStatusAndDefenders.GymDefender.Count() == MaxPlayers)
                     return false;
             }
             catch (Exception ex)

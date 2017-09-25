@@ -221,7 +221,8 @@ namespace PoGo.NecroBot.Logic.Tasks
                 // Filter out the gyms
                 forts = forts.Where(x => x.Type != FortType.Gym).ToList();
             }
-            else if (session.LogicSettings.GymConfig.PrioritizeGymOverPokestop)
+
+            if (session.LogicSettings.GymConfig.PrioritizeGymOverPokestop)
             {
                 // Prioritize gyms over pokestops
                 var gyms = forts.Where(x => x.Type == FortType.Gym &&
@@ -230,8 +231,20 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                 if (session.LogicSettings.GymConfig.PrioritizeGymWithFreeSlot)
                 {
-                    var freeSlots = gyms.Where(w => w.OwnedByTeam == session.Profile.PlayerData.Team &&
-                    session.GymState.GymGetInfo(session, w).GymStatusAndDefenders.GymDefender.Count() < 6);
+                    var freeSlots = new List<FortData>();
+                    foreach (var _gym in gyms)
+                    {
+                        if (_gym.OwnedByTeam == session.Profile.PlayerData.Team)
+                        {
+                            var task = await session.Client.Fort.GymGetInfo(_gym.Id, _gym.Latitude, _gym.Longitude).ConfigureAwait(false);
+                            if (task.Result == GymGetInfoResponse.Types.Result.Success)
+                            {
+                                if (task.GymStatusAndDefenders.GymDefender.Count() < UseGymBattleTask.MaxPlayers)
+                                    freeSlots.Add(_gym);
+                            }
+                        }
+                    }
+
                     if (freeSlots.Count() > 0)
                         return freeSlots.First();
                 }
@@ -246,21 +259,19 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         public static async Task SpinPokestopNearBy(ISession session, CancellationToken cancellationToken, FortData destinationFort = null)
         {
-            var allForts = session.Forts.ToList(); // old code now gyms have spinDisk --> .Where(p => p.Type == FortType.Checkpoint).ToList();
-
-            if (allForts.Count > 0)
+            if (session.Forts.Count() > 0)
             {
-                var spinablePokestops = allForts.Where(
+                var spinablePokestops = session.Forts.Where(
                     i =>
                         (
                             LocationUtils.CalculateDistanceInMeters(
                                 session.Client.CurrentLatitude, session.Client.CurrentLongitude,
                                 i.Latitude, i.Longitude) < 40 &&
-                                i.CooldownCompleteTimestampMs == 0 &&
+                                i.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime() &&
                                 (destinationFort == null || destinationFort.Id != i.Id))
                 ).ToList();
 
-                if (spinablePokestops.Count > 0)
+                if (spinablePokestops.Count() > 0)
                 {
                     foreach (var pokeStop in spinablePokestops)
                     {

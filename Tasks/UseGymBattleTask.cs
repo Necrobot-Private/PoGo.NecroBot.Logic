@@ -1352,7 +1352,6 @@ namespace PoGo.NecroBot.Logic.Tasks
             PokemonData pokemon = null;
             List<ulong> excluded = new List<ulong>();
             var pokemonList = (await _session.Inventory.GetPokemons().ConfigureAwait(false)).ToList();
-            pokemonList.RemoveAll(x => _session.LogicSettings.GymConfig.ExcludeForGyms.Contains(x.PokemonId));
 
             if (_session.LogicSettings.GymConfig.Defenders != null && _session.LogicSettings.GymConfig.Defenders.Count > 0)
             {

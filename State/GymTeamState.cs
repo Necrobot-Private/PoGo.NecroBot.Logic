@@ -33,8 +33,6 @@ namespace PoGo.NecroBot.Logic.State
 
         public SwitchPokemonData SwithAttacker { get; set; }
 
-        public int BerriesRound { get; set; }
-
         public string BerriesGymId { get; set; }
 
         public string CapturedGymId { get; set; }

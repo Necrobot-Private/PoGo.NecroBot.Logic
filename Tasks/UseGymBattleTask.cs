@@ -27,15 +27,15 @@ namespace PoGo.NecroBot.Logic.Tasks
 {
     public class UseGymBattleTask
     {
-        public static DateTime AttackStart { get; private set; }
+        private static DateTime AttackStart { get; set; }
 
         private static int _startBattleCounter = 3;
         private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        private static FortDetailsResponse FortInfo;
-        private static GymGetInfoResponse FortDetails;
-        private static IEnumerable<PokemonData> DeployedPokemons;
-        private static FortData Gym;
-        private static ISession Session;
+        private static FortDetailsResponse _fortInfo;
+        private static GymGetInfoResponse _fortDetails;
+        private static IEnumerable<PokemonData> _deployedPokemons;
+        private static FortData _gym;
+        private static ISession _session;
 
         public static async Task Execute(ISession session, CancellationToken cancellationToken, FortData gym, FortDetailsResponse fortInfo)
         {
@@ -43,11 +43,14 @@ namespace PoGo.NecroBot.Logic.Tasks
             TinyIoC.TinyIoCContainer.Current.Resolve<MultiAccountManager>().ThrowIfSwitchAccountRequested();
 
             if (!session.LogicSettings.GymConfig.Enable || gym.Type != FortType.Gym) return;
-            FortInfo = fortInfo;
-            Gym = gym;
-            Session = session;
-            FortDetails = session.GymState.GymGetInfo(session, gym, true); //await session.Client.Fort.GetGymDetails(gym.Id, gym.Latitude, gym.Longitude).ConfigureAwait(false);
-            DeployedPokemons = await session.Inventory.GetDeployedPokemons().ConfigureAwait(false);
+            _fortInfo = fortInfo;
+            _gym = gym;
+            _session = session;
+            _fortDetails = session.GymState.GymGetInfo(session, gym, true);
+            if (_fortDetails.Result != GymGetInfoResponse.Types.Result.Success)
+                return;
+
+            _deployedPokemons = await session.Inventory.GetDeployedPokemons().ConfigureAwait(false);
 
             if (session.GymState.MoveSettings == null)
             {
@@ -67,7 +70,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     Longitude = fortInfo.Longitude
                 });
 
-                if (FortDetails.Result == GymGetInfoResponse.Types.Result.Success)
+                if (_fortDetails.Result == GymGetInfoResponse.Types.Result.Success)
                 {
                     var player = session.Profile.PlayerData;
                     await EnsureJoinTeam(player).ConfigureAwait(false);
@@ -75,28 +78,31 @@ namespace PoGo.NecroBot.Logic.Tasks
                     session.EventDispatcher.Send(new GymDetailInfoEvent()
                     {
                         Team = gym.OwnedByTeam,
-                        Players = FortDetails.GymStatusAndDefenders.GymDefender.Count(),
-                        Name = FortDetails.Name,
+                        Players = _fortDetails.GymStatusAndDefenders.GymDefender.Count(),
+                        Name = _fortDetails.Name,
                     });
 
                     if (player.Team != TeamColor.Neutral)
                     {
                         if (gym.OwnedByTeam == player.Team || gym.OwnedByTeam == TeamColor.Neutral)
                         {
-                            if (CanDeployToGym(gym))
-                            {
+                            if (CanDeployToGym())
                                 await DeployPokemonToGym().ConfigureAwait(false);
-                            }
-
-                            if (CanBerrieGym(gym))
+ 
+                            if (CanBerrieGym())
                             {
-                                session.GymState.BerriesRound++;
+                                //Not released yet!
                             }
                         }
                         else
                         {
-                            if (CanAttackGym(gym))
+                            if (CanAttackGym())
                                 await StartGymAttackLogic().ConfigureAwait(false);
+
+                            if (CanAttackRaid())
+                            {
+                                StartRaidAttackLogic();
+                            }
                         }
                     }
                 }
@@ -111,19 +117,19 @@ namespace PoGo.NecroBot.Logic.Tasks
             }
         }
 
-        private static async Task StartGymAttackLogic()
+        private static void StartRaidAttackLogic()
         {
             //Check if raid or normal battle
             try
             {
-                if (Gym.RaidInfo != null)
+                if (_gym.RaidInfo != null)
                 {
                     DateTime expires = new DateTime(0);
                     TimeSpan time = new TimeSpan(0);
 
-                    if (Gym.RaidInfo.RaidBattleMs > DateTime.UtcNow.ToUnixTime())
+                    if (_gym.RaidInfo.RaidBattleMs > DateTime.UtcNow.ToUnixTime())
                     {
-                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(Gym.RaidInfo.RaidBattleMs);
+                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(_gym.RaidInfo.RaidBattleMs);
                         time = expires - DateTime.UtcNow;
                         if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
                         {
@@ -132,14 +138,14 @@ namespace PoGo.NecroBot.Logic.Tasks
                         }
                     }
 
-                    if (Gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
+                    if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
                     {
                         //Raid modes 
-                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(Gym.RaidInfo.RaidEndMs);
+                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(_gym.RaidInfo.RaidEndMs);
                         time = expires - DateTime.UtcNow;
                         if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
                         {
-                            string boss = $"Boss: {Session.Translation.GetPokemonTranslation(Gym.RaidInfo.RaidPokemon.PokemonId)} CP: {Gym.RaidInfo.RaidPokemon.Cp}";
+                            string boss = $"Boss: {_session.Translation.GetPokemonTranslation(_gym.RaidInfo.RaidPokemon.PokemonId)} CP: {_gym.RaidInfo.RaidPokemon.Cp}";
                             string str = $"Local RAID ends in: {time.Hours:00}h:{time.Minutes:00}m\nat: {(DateTime.Now + time).Hour:00}:{(DateTime.Now + time).Minute:00} Local time\n\r{boss}";
                             Logger.Write($"{str}.", LogLevel.Gym);
 
@@ -160,9 +166,9 @@ namespace PoGo.NecroBot.Logic.Tasks
                         //
                     }
 
-                    if (Gym.RaidInfo.RaidSpawnMs > DateTime.UtcNow.ToUnixTime())
+                    if (_gym.RaidInfo.RaidSpawnMs > DateTime.UtcNow.ToUnixTime())
                     {
-                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(Gym.RaidInfo.RaidSpawnMs);
+                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(_gym.RaidInfo.RaidSpawnMs);
                         time = expires - DateTime.UtcNow;
                         if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
                         {
@@ -179,8 +185,11 @@ namespace PoGo.NecroBot.Logic.Tasks
 #endif
                 return;
             }
+        }
 
-            var defenders = FortDetails.GymStatusAndDefenders.GymDefender.Select(x => x.MotivatedPokemon.Pokemon).ToList();
+        private static async Task StartGymAttackLogic()
+        {
+            var defenders = _fortDetails.GymStatusAndDefenders.GymDefender.Select(x => x.MotivatedPokemon.Pokemon).ToList();
 
             if (defenders.Count < 1)
                 return;
@@ -191,8 +200,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 return false;
             }*/
 
-            bool isTraining = (Session.Profile.PlayerData.Team == Gym.OwnedByTeam || (!string.IsNullOrEmpty(Session.GymState.CapturedGymId) && Session.GymState.CapturedGymId.Equals(Gym.Id)));
-            var badassPokemon = await CompleteAttackTeam(defenders, isTraining).ConfigureAwait(false);
+            var badassPokemon = await CompleteAttackTeam(defenders).ConfigureAwait(false);
             if (badassPokemon == null)
             {
                 Logger.Write("Check gym settings, we can't compete against attackers team. Exiting.", LogLevel.Warning, ConsoleColor.Magenta);
@@ -229,7 +237,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             while (index < defenders.Count())
             {
-                Logger.Write("Attacking Team consists of: " + string.Join(", ", Session.GymState.MyTeam.Select(s => string.Format("{0} ({1} HP / {2} CP) [{3}]", s.Attacker.PokemonId, s.HpState, s.Attacker.Cp, s.Attacker.Id))), LogLevel.Gym, ConsoleColor.White);
+                Logger.Write("Attacking Team consists of: " + string.Join(", ", _session.GymState.MyTeam.Select(s => string.Format("{0} ({1} HP / {2} CP) [{3}]", s.Attacker.PokemonId, s.HpState, s.Attacker.Cp, s.Attacker.Id))), LogLevel.Gym, ConsoleColor.White);
                 var thisAttackActions = new List<BattleAction>();
 
                 GymStartSessionResponse result = null;
@@ -245,7 +253,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     _startBattleCounter--;
 
                     Logger.Write("Starting battle Results: " + result, LogLevel.Gym, ConsoleColor.Red);
-                    Logger.Write("FortDetails: " + FortDetails, LogLevel.Gym, ConsoleColor.Red);
+                    Logger.Write("FortDetails: " + _fortDetails, LogLevel.Gym, ConsoleColor.Red);
                     Logger.Write("PokemonDatas: " + string.Join(", ", pokemonDatas.Select(s => string.Format("Id: {0} Name: {1} CP: {2} HP: {3}", s.Id, s.PokemonId, s.Cp, s.Stamina))), LogLevel.Gym, ConsoleColor.Red);
                     Logger.Write("DefenderId: " + defenderPokemonId, LogLevel.Gym, ConsoleColor.Red);
                     Logger.Write("ActionsLog -> " + string.Join(Environment.NewLine, battleActions), LogLevel.Gym, ConsoleColor.Red);
@@ -257,7 +265,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 // If we can't start battle in 10 tries, let's skip the gym
                 if (result != null || result.Result != GymStartSessionResponse.Types.Result.Success)
                 {
-                    Session.EventDispatcher.Send(new GymErrorUnset { GymName = FortInfo.Name });
+                    _session.EventDispatcher.Send(new GymErrorUnset { GymName = _fortInfo.Name });
                     isVictory = false;
                     break;
                 }
@@ -315,12 +323,12 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                         Logger.Write($"(Battle) XP: {exp} | Players: {defenders.Count,2:#0} | Next defender Id: {defenderPokemonId}", LogLevel.Gym, ConsoleColor.Magenta);
 
-                        if (Session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                            await PushNotificationClient.SendNotification(Session, $"Gym Battle",
+                        if (_session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
+                            await PushNotificationClient.SendNotification(_session, $"Gym Battle",
                                                                                    $"We were victorious!\n" +
                                                                                    $"XP: {exp}" +
                                                                                    $"Players: {defenders.Count,2:#0}", true).ConfigureAwait(false); // +
-                                                                                                                                                                    //$"{startResponse.Defender.ActivePokemon.PokemonData.PokemonId}", true);
+                                                                                                                                                    //$"{startResponse.Defender.ActivePokemon.PokemonData.PokemonId}", true);
                     }
                     continue;
                 }
@@ -330,14 +338,14 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             if (isVictory)
             {
-                await Execute(Session, Session.CancellationTokenSource.Token, Gym, FortInfo).ConfigureAwait(false);
+                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _fortInfo).ConfigureAwait(false);
             }
 
             if (isFailedToStart && _startBattleCounter > 0)
             {
                 Logger.Write("Waiting extra time to try again (10 sec)");
                 await Task.Delay(10000).ConfigureAwait(false);
-                await Execute(Session, Session.CancellationTokenSource.Token, Gym, FortInfo).ConfigureAwait(false);
+                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _fortInfo).ConfigureAwait(false);
             }
 
             var bAction = battleActions.LastOrDefault();
@@ -346,7 +354,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 {
                     if (battleActions.Exists(p => p.Type == BattleActionType.ActionVictory))
                     {
-                        await Execute(Session, Session.CancellationTokenSource.Token, Gym, FortInfo).ConfigureAwait(false);
+                        await Execute(_session, _session.CancellationTokenSource.Token, _gym, _fortInfo).ConfigureAwait(false);
                     }
                 }
 
@@ -356,12 +364,12 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static async Task DeployPokemonToGym()
         {
-           var availableSlots = 6 - FortDetails.GymStatusAndDefenders.GymDefender.Count();
+           var availableSlots = 6 - _fortDetails.GymStatusAndDefenders.GymDefender.Count();
 
             if (availableSlots > 0)
             {
-                var deployed = await Session.Inventory.GetDeployedPokemons().ConfigureAwait(false);
-                if (!deployed.Any(a => a.DeployedFortId == FortInfo.FortId))
+                var deployed = await _session.Inventory.GetDeployedPokemons().ConfigureAwait(false);
+                if (!deployed.Any(a => a.DeployedFortId == _fortInfo.FortId))
                 {
                     var pokemon = await GetDeployablePokemon().ConfigureAwait(false);
                     var response = new GymDeployResponse();
@@ -369,23 +377,23 @@ namespace PoGo.NecroBot.Logic.Tasks
                     {
                         try
                         {
-                            response = await Session.Client.Fort.GymDeploy(FortInfo.FortId, pokemon.Id).ConfigureAwait(false);
+                            response = await _session.Client.Fort.GymDeploy(_fortInfo.FortId, pokemon.Id).ConfigureAwait(false);
                         }
                         catch (APIBadRequestException)
                         {
                             Logger.Write("Failed to deploy pokemon. Trying again...", LogLevel.Gym, ConsoleColor.Magenta);
-                            await Execute(Session, Session.CancellationTokenSource.Token, Gym, FortInfo).ConfigureAwait(false);
+                            await Execute(_session, _session.CancellationTokenSource.Token, _gym, _fortInfo).ConfigureAwait(false);
                             return;
                         }
                         if (response?.Result == GymDeployResponse.Types.Result.Success)
                         {
-                            Session.EventDispatcher.Send(new GymDeployEvent()
+                            _session.EventDispatcher.Send(new GymDeployEvent()
                             {
                                 PokemonId = pokemon.PokemonId,
-                                Name = FortDetails.Name
+                                Name = _fortDetails.Name
                             });
 
-                            Session.GymState.CapturedGymId = Gym.Id;
+                            _session.GymState.CapturedGymId = _gym.Id;
                         }
                         else
                             Logger.Write(string.Format("Failed to deploy pokemon. Result: {0}", response.Result), LogLevel.Gym, ConsoleColor.Magenta);
@@ -398,13 +406,13 @@ namespace PoGo.NecroBot.Logic.Tasks
             }
             else
             {
-                int allCp = GetGymAllCpOnGym(FortDetails.GymStatusAndDefenders.GymDefender.Select(x => x.MotivatedPokemon.Pokemon).ToList());
-                string message = string.Format("No FREE slots in GYM: {0}/6 (All Cp: {1})", FortDetails.GymStatusAndDefenders.GymDefender.Count(), allCp);
+                int allCp = GetGymAllCpOnGym(_fortDetails.GymStatusAndDefenders.GymDefender.Select(x => x.MotivatedPokemon.Pokemon).ToList());
+                string message = string.Format("No FREE slots in GYM: {0}/6 (All Cp: {1})", _fortDetails.GymStatusAndDefenders.GymDefender.Count(), allCp);
                 Logger.Write(message, LogLevel.Gym, ConsoleColor.White);
             }
         }
 
-        private static async Task<IEnumerable<PokemonData>> CompleteAttackTeam(IEnumerable<PokemonData> defenders, bool isTraining)
+        private static async Task<IEnumerable<PokemonData>> CompleteAttackTeam(IEnumerable<PokemonData> defenders)
         {
             /*
              *  While i'm trying to make this gym attack i've made an error and complete team with the same one pokemon 6 times. 
@@ -412,16 +420,16 @@ namespace PoGo.NecroBot.Logic.Tasks
              *  So after all we used only one pokemon.
              *  Maybe we can use it somehow.
              */
-            Session.GymState.MyTeam.Clear();
+            _session.GymState.MyTeam.Clear();
 
             List<PokemonData> attackers = new List<PokemonData>();
 
-            if (Session.LogicSettings.GymConfig.UsePokemonToAttackOnlyByCp && defenders.Count() > 1)
+            if (_session.LogicSettings.GymConfig.UsePokemonToAttackOnlyByCp && defenders.Count() > 1)
             {
                 attackers.AddRange(GetBestToTeam(attackers));
                 attackers.ForEach(attacker =>
                 {
-                    Session.GymState.AddToTeam(Session, attacker);
+                    _session.GymState.AddToTeam(_session, attacker);
                 });
             }
             else
@@ -430,14 +438,14 @@ namespace PoGo.NecroBot.Logic.Tasks
                 {
                     foreach (var defender in defenders)
                     {
-                        var attacker = await GetBestAgainst(attackers, defender, isTraining).ConfigureAwait(false);
+                        var attacker = await GetBestAgainst(attackers, defender).ConfigureAwait(false);
                         if (attacker != null)
                         {
                             //Trying to make bot only select pokemon that are more than 75% of full CP to battle. Still needs some work(The Wizard1328)
                             //if (attacker.Cp >= attacker.Cp * 0.75)
                             //{
                             attackers.Add(attacker);
-                            Session.GymState.AddToTeam(Session, attacker);
+                            _session.GymState.AddToTeam(_session, attacker);
                             if (attackers.Count == 6)
                                 break;
                             //}
@@ -450,21 +458,20 @@ namespace PoGo.NecroBot.Logic.Tasks
             return attackers;
         }
 
-        private static async Task<PokemonData> GetBestAgainst(List<PokemonData> myTeam, PokemonData defender, bool isTraining)
+        private static async Task<PokemonData> GetBestAgainst(List<PokemonData> myTeam, PokemonData defender)
         {
             Logger.Write(string.Format("Checking pokemon for {0} ({1} CP). Already collected team has: {2}", defender.PokemonId, defender.Cp, string.Join(", ", myTeam.Select(s => string.Format("{0} ({1} CP)", s.PokemonId, s.Cp)))), LogLevel.Gym, ConsoleColor.White);
-            Session.GymState.AddPokemon(Session, defender, false);
-            AnyPokemonStat defenderStat = Session.GymState.OtherDefenders.FirstOrDefault(f => f.Data.Id == defender.Id);
+            _session.GymState.AddPokemon(_session, defender, false);
+            AnyPokemonStat defenderStat = _session.GymState.OtherDefenders.FirstOrDefault(f => f.Data.Id == defender.Id);
 
-            if (Session.LogicSettings.GymConfig.Attackers != null && Session.LogicSettings.GymConfig.Attackers.Count > 0)
+            if (_session.LogicSettings.GymConfig.Attackers != null && _session.LogicSettings.GymConfig.Attackers.Count > 0)
             {
-                var allPokemons = await Session.Inventory.GetPokemons().ConfigureAwait(false);
-                var configs = isTraining ? Session.LogicSettings.GymConfig.Trainers : Session.LogicSettings.GymConfig.Attackers;
-                foreach (var def in configs.OrderByDescending(o => o.Priority))
+                var allPokemons = await _session.Inventory.GetPokemons().ConfigureAwait(false);
+                foreach (var def in _session.LogicSettings.GymConfig.Attackers.OrderByDescending(o => o.Priority))
                 {
                     var attackersFromConfig = allPokemons.Where(w =>
                         w.PokemonId == def.Pokemon &&
-                        w.Id != Session.Profile.PlayerData.BuddyPokemon?.Id &&
+                        w.Id != _session.Profile.PlayerData.BuddyPokemon?.Id &&
                         !myTeam.Any(a => a.Id == w.Id) &&
                         string.IsNullOrEmpty(w.DeployedFortId) &&
                         w.Cp >= (def.MinCP ?? 0) &&
@@ -478,37 +485,37 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             }
 
-            MyPokemonStat myAttacker = Session.GymState.MyPokemons
+            MyPokemonStat myAttacker = _session.GymState.MyPokemons
                 .Where(w =>
                         !myTeam.Any(a => a.Id == w.Data.Id) && //not already in team
                         string.IsNullOrEmpty(w.Data.DeployedFortId) && //not already deployed
-                        Session.Profile.PlayerData.BuddyPokemon?.Id != w.Data.Id //not a buddy
+                        _session.Profile.PlayerData.BuddyPokemon?.Id != w.Data.Id //not a buddy
                     )
-                .OrderByDescending(o => o.TypeFactor[defenderStat.MainType] + o.TypeFactor[defenderStat.ExtraType] + o.GetFactorAgainst(Session, defender.Cp, isTraining))
+                .OrderByDescending(o => o.TypeFactor[defenderStat.MainType] + o.TypeFactor[defenderStat.ExtraType])
                 .ThenByDescending(o => o.Data.Cp)
                 .FirstOrDefault();
-            if (myAttacker == null || myAttacker.Data.Cp < (defender.Cp * Session.LogicSettings.GymConfig.ButNotLessThanDefenderPercent))
+            if (myAttacker == null || myAttacker.Data.Cp < (defender.Cp * _session.LogicSettings.GymConfig.ButNotLessThanDefenderPercent))
             {
                 var other = GetBestToTeam(myTeam).FirstOrDefault();
                 Logger.Write(string.Format("Best against {0} {6} CP with is {1} {5} can't be found, will use top by CP instead: {2} ({7} CP) with attacks {3} and {4}", defender.PokemonId, defenderStat.MainType, other?.PokemonId, other?.Move1, other?.Move2, defenderStat.ExtraType, defender.Cp, other?.Cp), LogLevel.Gym, ConsoleColor.White);
                 return other;
             }
             else
-                Logger.Write(string.Format("Best against {0} {7} CP with is {1} {5} type will be {2} ({6} CP) with attacks {3} and {4} (Factor for main type {8}, second {9}, CP {10})", defender.PokemonId, defenderStat.MainType, myAttacker.Data.PokemonId, myAttacker.Data.Move1, myAttacker.Data.Move2, defenderStat.ExtraType, myAttacker.Data.Cp, defender.Cp, myAttacker.TypeFactor[defenderStat.MainType], myAttacker.TypeFactor[defenderStat.ExtraType], myAttacker.GetFactorAgainst(Session, defender.Cp, isTraining)), LogLevel.Gym, ConsoleColor.White);
+                Logger.Write(string.Format("Best against {0} {7} CP with is {1} {5} type will be {2} ({6} CP) with attacks {3} and {4} (Factor for main type {8}, second {9}, CP {10})", defender.PokemonId, defenderStat.MainType, myAttacker.Data.PokemonId, myAttacker.Data.Move1, myAttacker.Data.Move2, defenderStat.ExtraType, myAttacker.Data.Cp, defender.Cp, myAttacker.TypeFactor[defenderStat.MainType], myAttacker.TypeFactor[defenderStat.ExtraType]), LogLevel.Gym, ConsoleColor.White);
             return myAttacker.Data;
         }
 
         private static PokemonData GetBestInBattle(PokemonData defender)
         {
-            Session.GymState.AddPokemon(Session, defender, false);
-            AnyPokemonStat defenderStat = Session.GymState.OtherDefenders.FirstOrDefault(f => f.Data.Id == defender.Id);
+            _session.GymState.AddPokemon(_session, defender, false);
+            AnyPokemonStat defenderStat = _session.GymState.OtherDefenders.FirstOrDefault(f => f.Data.Id == defender.Id);
             List<PokemonType> attacks = new List<PokemonType>(GetBestTypes(defenderStat.MainType));
 
             Logger.Write(string.Format("Searching for a new attacker against {0} ({1})", defender.PokemonId, defenderStat.MainType), LogLevel.Gym, ConsoleColor.White);
 
-            var moves = Session.GymState.MoveSettings.Where(w => attacks.Any(a => a == w.PokemonType));
+            var moves = _session.GymState.MoveSettings.Where(w => attacks.Any(a => a == w.PokemonType));
 
-            PokemonData newAttacker = Session.GymState.MyTeam.Where(w =>
+            PokemonData newAttacker = _session.GymState.MyTeam.Where(w =>
                         moves.Any(a => a.MovementId == w.Attacker.Move1 || a.MovementId == w.Attacker.Move2) && //by move
                         w.HpState > 0
                     )
@@ -519,7 +526,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             if (newAttacker == null)
             {
                 Logger.Write("No best found, takeing by CP", LogLevel.Gym, ConsoleColor.Yellow);
-                newAttacker = Session.GymState.MyTeam.Where(w => w.HpState > 0)
+                newAttacker = _session.GymState.MyTeam.Where(w => w.HpState > 0)
                 .OrderByDescending(o => o.Attacker.Cp)
                 .Select(s => s.Attacker)
                 .FirstOrDefault();
@@ -533,10 +540,10 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static IEnumerable<PokemonData> GetBestToTeam(List<PokemonData> myTeam)
         {
-            var data = Session.GymState.MyPokemons.Where(w =>
+            var data = _session.GymState.MyPokemons.Where(w =>
                         !myTeam.Any(a => a.Id == w.Data.Id) && //not already in team
                         string.IsNullOrEmpty(w.Data.DeployedFortId) && //not already deployed
-                        Session.Profile.PlayerData.BuddyPokemon?.Id != w.Data.Id //not a buddy
+                        _session.Profile.PlayerData.BuddyPokemon?.Id != w.Data.Id //not a buddy
                     )
                 .Select(s => s.Data)
                 .OrderByDescending(o => o.Cp)
@@ -641,33 +648,33 @@ namespace PoGo.NecroBot.Logic.Tasks
             }
         }
 
-        public static async Task RevivePokemon(PokemonData pokemon)
+        private static async Task RevivePokemon(PokemonData pokemon)
         {
             int healPower = 0;
 
-            if (Session.LogicSettings.GymConfig.SaveMaxRevives && await Session.Inventory.GetItemAmountByType(ItemId.ItemMaxPotion).ConfigureAwait(false) > 0)
+            if (_session.LogicSettings.GymConfig.SaveMaxRevives && await _session.Inventory.GetItemAmountByType(ItemId.ItemMaxPotion).ConfigureAwait(false) > 0)
                 healPower = Int32.MaxValue;
             else
             {
-                var normalPotions = await Session.Inventory.GetItemAmountByType(ItemId.ItemPotion).ConfigureAwait(false);
-                var superPotions = await Session.Inventory.GetItemAmountByType(ItemId.ItemSuperPotion).ConfigureAwait(false);
-                var hyperPotions = await Session.Inventory.GetItemAmountByType(ItemId.ItemHyperPotion).ConfigureAwait(false);
+                var normalPotions = await _session.Inventory.GetItemAmountByType(ItemId.ItemPotion).ConfigureAwait(false);
+                var superPotions = await _session.Inventory.GetItemAmountByType(ItemId.ItemSuperPotion).ConfigureAwait(false);
+                var hyperPotions = await _session.Inventory.GetItemAmountByType(ItemId.ItemHyperPotion).ConfigureAwait(false);
 
                 healPower = normalPotions * 20 + superPotions * 50 + hyperPotions * 200;
             }
 
-            var normalRevives = await Session.Inventory.GetItemAmountByType(ItemId.ItemRevive).ConfigureAwait(false);
-            var maxRevives = await Session.Inventory.GetItemAmountByType(ItemId.ItemMaxRevive).ConfigureAwait(false);
+            var normalRevives = await _session.Inventory.GetItemAmountByType(ItemId.ItemRevive).ConfigureAwait(false);
+            var maxRevives = await _session.Inventory.GetItemAmountByType(ItemId.ItemMaxRevive).ConfigureAwait(false);
 
             if ((healPower >= pokemon.StaminaMax / 2 || maxRevives == 0) && normalRevives > 0 && pokemon.Stamina <= 0)
             {
-                var ret = await Session.Client.Inventory.UseItemRevive(ItemId.ItemRevive, pokemon.Id).ConfigureAwait(false);
+                var ret = await _session.Client.Inventory.UseItemRevive(ItemId.ItemRevive, pokemon.Id).ConfigureAwait(false);
                 switch (ret.Result)
                 {
                     case UseItemReviveResponse.Types.Result.Success:
-                        await Session.Inventory.UpdateInventoryItem(ItemId.ItemRevive).ConfigureAwait(false);
+                        await _session.Inventory.UpdateInventoryItem(ItemId.ItemRevive).ConfigureAwait(false);
                         pokemon.Stamina = ret.Stamina;
-                        Session.EventDispatcher.Send(new EventUsedRevive
+                        _session.EventDispatcher.Send(new EventUsedRevive
                         {
                             Type = "normal",
                             PokemonCp = pokemon.Cp,
@@ -689,13 +696,13 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             if (maxRevives > 0 && pokemon.Stamina <= 0)
             {
-                var ret = await Session.Client.Inventory.UseItemRevive(ItemId.ItemMaxRevive, pokemon.Id).ConfigureAwait(false);
+                var ret = await _session.Client.Inventory.UseItemRevive(ItemId.ItemMaxRevive, pokemon.Id).ConfigureAwait(false);
                 switch (ret.Result)
                 {
                     case UseItemReviveResponse.Types.Result.Success:
-                        await Session.Inventory.UpdateInventoryItem(ItemId.ItemMaxRevive).ConfigureAwait(false);
+                        await _session.Inventory.UpdateInventoryItem(ItemId.ItemMaxRevive).ConfigureAwait(false);
                         pokemon.Stamina = ret.Stamina;
-                        Session.EventDispatcher.Send(new EventUsedRevive
+                        _session.EventDispatcher.Send(new EventUsedRevive
                         {
                             Type = "max",
                             PokemonCp = pokemon.Cp,
@@ -719,12 +726,12 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static async Task<bool> UsePotion(PokemonData pokemon, int normalPotions)
         {
-            var ret = await Session.Client.Inventory.UseItemPotion(ItemId.ItemPotion, pokemon.Id).ConfigureAwait(false);
+            var ret = await _session.Client.Inventory.UseItemPotion(ItemId.ItemPotion, pokemon.Id).ConfigureAwait(false);
             switch (ret.Result)
             {
                 case UseItemPotionResponse.Types.Result.Success:
                     pokemon.Stamina = ret.Stamina;
-                    Session.EventDispatcher.Send(new EventUsedPotion
+                    _session.EventDispatcher.Send(new EventUsedPotion
                     {
                         Type = "normal",
                         PokemonCp = pokemon.Cp,
@@ -748,12 +755,12 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static async Task<bool> UseSuperPotion(PokemonData pokemon, int superPotions)
         {
-            var ret = await Session.Client.Inventory.UseItemPotion(ItemId.ItemSuperPotion, pokemon.Id).ConfigureAwait(false);
+            var ret = await _session.Client.Inventory.UseItemPotion(ItemId.ItemSuperPotion, pokemon.Id).ConfigureAwait(false);
             switch (ret.Result)
             {
                 case UseItemPotionResponse.Types.Result.Success:
                     pokemon.Stamina = ret.Stamina;
-                    Session.EventDispatcher.Send(new EventUsedPotion
+                    _session.EventDispatcher.Send(new EventUsedPotion
                     {
                         Type = "super",
                         PokemonCp = pokemon.Cp,
@@ -778,12 +785,12 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static async Task<bool> UseHyperPotion(PokemonData pokemon, int hyperPotions)
         {
-            var ret = await Session.Client.Inventory.UseItemPotion(ItemId.ItemHyperPotion, pokemon.Id).ConfigureAwait(false);
+            var ret = await _session.Client.Inventory.UseItemPotion(ItemId.ItemHyperPotion, pokemon.Id).ConfigureAwait(false);
             switch (ret.Result)
             {
                 case UseItemPotionResponse.Types.Result.Success:
                     pokemon.Stamina = ret.Stamina;
-                    Session.EventDispatcher.Send(new EventUsedPotion
+                    _session.EventDispatcher.Send(new EventUsedPotion
                     {
                         Type = "hyper",
                         PokemonCp = pokemon.Cp,
@@ -807,12 +814,12 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static async Task<bool> UseMaxPotion(PokemonData pokemon, int maxPotions)
         {
-            var ret = await Session.Client.Inventory.UseItemPotion(ItemId.ItemMaxPotion, pokemon.Id).ConfigureAwait(false);
+            var ret = await _session.Client.Inventory.UseItemPotion(ItemId.ItemMaxPotion, pokemon.Id).ConfigureAwait(false);
             switch (ret.Result)
             {
                 case UseItemPotionResponse.Types.Result.Success:
                     pokemon.Stamina = ret.Stamina;
-                    Session.EventDispatcher.Send(new EventUsedPotion
+                    _session.EventDispatcher.Send(new EventUsedPotion
                     {
                         Type = "max",
                         PokemonCp = pokemon.Cp,
@@ -834,12 +841,12 @@ namespace PoGo.NecroBot.Logic.Tasks
             return true;
         }
 
-        public static async Task<bool> HealPokemon(PokemonData pokemon)
+        private static async Task<bool> HealPokemon(PokemonData pokemon)
         {
-            var normalPotions = await Session.Inventory.GetItemAmountByType(ItemId.ItemPotion).ConfigureAwait(false);
-            var superPotions = await Session.Inventory.GetItemAmountByType(ItemId.ItemSuperPotion).ConfigureAwait(false);
-            var hyperPotions = await Session.Inventory.GetItemAmountByType(ItemId.ItemHyperPotion).ConfigureAwait(false);
-            var maxPotions = await Session.Inventory.GetItemAmountByType(ItemId.ItemMaxPotion).ConfigureAwait(false);
+            var normalPotions = await _session.Inventory.GetItemAmountByType(ItemId.ItemPotion).ConfigureAwait(false);
+            var superPotions = await _session.Inventory.GetItemAmountByType(ItemId.ItemSuperPotion).ConfigureAwait(false);
+            var hyperPotions = await _session.Inventory.GetItemAmountByType(ItemId.ItemHyperPotion).ConfigureAwait(false);
+            var maxPotions = await _session.Inventory.GetItemAmountByType(ItemId.ItemMaxPotion).ConfigureAwait(false);
 
             var healPower = normalPotions * 20 + superPotions * 50 + hyperPotions * 200;
 
@@ -849,7 +856,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 {
                     if (await UseMaxPotion(pokemon, maxPotions).ConfigureAwait(false))
                     {
-                        await Session.Inventory.UpdateInventoryItem(ItemId.ItemMaxPotion).ConfigureAwait(false);
+                        await _session.Inventory.UpdateInventoryItem(ItemId.ItemMaxPotion).ConfigureAwait(false);
                         return true;
                     }
                 }
@@ -866,7 +873,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     if (!await UseHyperPotion(pokemon, hyperPotions).ConfigureAwait(false))
                         return false;
                     hyperPotions--;
-                    await Session.Inventory.UpdateInventoryItem(ItemId.ItemHyperPotion).ConfigureAwait(false);
+                    await _session.Inventory.UpdateInventoryItem(ItemId.ItemHyperPotion).ConfigureAwait(false);
                 }
                 else
                 if (((pokemon.StaminaMax - pokemon.Stamina) > 50 || normalPotions * 20 < (pokemon.StaminaMax - pokemon.Stamina)) && superPotions > 0)
@@ -874,14 +881,14 @@ namespace PoGo.NecroBot.Logic.Tasks
                     if (!await UseSuperPotion(pokemon, superPotions).ConfigureAwait(false))
                         return false;
                     superPotions--;
-                    await Session.Inventory.UpdateInventoryItem(ItemId.ItemSuperPotion).ConfigureAwait(false);
+                    await _session.Inventory.UpdateInventoryItem(ItemId.ItemSuperPotion).ConfigureAwait(false);
                 }
                 else
                 {
                     if (!await UsePotion(pokemon, normalPotions).ConfigureAwait(false))
                         return false;
                     normalPotions--;
-                    await Session.Inventory.UpdateInventoryItem(ItemId.ItemPotion).ConfigureAwait(false);
+                    await _session.Inventory.UpdateInventoryItem(ItemId.ItemPotion).ConfigureAwait(false);
                 }
             }
 
@@ -899,8 +906,8 @@ namespace PoGo.NecroBot.Logic.Tasks
             Logger.Write($"We are attacking: {startResponse.Battle.Defender.ActivePokemon.PokemonData.PokemonId} ({startResponse.Battle.Defender.ActivePokemon.PokemonData.Cp} CP), Lvl: {startResponse.Battle.Defender.ActivePokemon.PokemonData.Level():0.0}", LogLevel.Gym, ConsoleColor.White);
             Console.WriteLine(Environment.NewLine);
 
-            if (Session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                await PushNotificationClient.SendNotification(Session, $"Gym battle started", $"Trainer: {startResponse.Battle.Defender.TrainerPublicProfile.Name}\n" +
+            if (_session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
+                await PushNotificationClient.SendNotification(_session, $"Gym battle started", $"Trainer: {startResponse.Battle.Defender.TrainerPublicProfile.Name}\n" +
                                                                        $"We are attacking: {startResponse.Battle.Defender.ActivePokemon.PokemonData.PokemonId} ({startResponse.Battle.Defender.ActivePokemon.PokemonData.Cp} CP)\n" +
                                                                        $"Lvl: {startResponse.Battle.Defender.ActivePokemon.PokemonData.Level():0.0}", true).ConfigureAwait(false);
 
@@ -918,8 +925,8 @@ namespace PoGo.NecroBot.Logic.Tasks
                 try
                 {
                     Logger.Write("Starts loop", LogLevel.Gym, ConsoleColor.White);
-                    var last = lastActions.Where(w => !Session.GymState.MyTeam.Any(a => a.Attacker.Id.Equals(w.ActivePokemonId))).LastOrDefault();
-                    BattleAction lastSpecialAttack = lastActions.Where(w => !Session.GymState.MyTeam.Any(a => a.Attacker.Id.Equals(w.ActivePokemonId)) && w.Type == BattleActionType.ActionSpecialAttack).LastOrDefault();
+                    var last = lastActions.Where(w => !_session.GymState.MyTeam.Any(a => a.Attacker.Id.Equals(w.ActivePokemonId))).LastOrDefault();
+                    BattleAction lastSpecialAttack = lastActions.Where(w => !_session.GymState.MyTeam.Any(a => a.Attacker.Id.Equals(w.ActivePokemonId)) && w.Type == BattleActionType.ActionSpecialAttack).LastOrDefault();
 
                     Logger.Write("Getting actions", LogLevel.Gym, ConsoleColor.White);
                     var attackActionz = last == null || last.Type == BattleActionType.ActionVictory || last.Type == BattleActionType.ActionDefeat ? emptyActions : GetActions(serverMs, attacker, defender, _currentAttackerEnergy, last, lastSpecialAttack);
@@ -938,7 +945,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                         Logger.Write("Start making attack", LogLevel.Gym, ConsoleColor.White);
                         long timeBefore = DateTime.UtcNow.ToUnixTime();
-                        attackResult = await Session.Client.Fort.GymBattleAttak(Gym.Id, startResponse.Battle.BattleId, attackActionz, a2, serverMs).ConfigureAwait(false);
+                        attackResult = await _session.Client.Fort.GymBattleAttak(_gym.Id, startResponse.Battle.BattleId, attackActionz, a2, serverMs).ConfigureAwait(false);
                         long timeAfter = DateTime.UtcNow.ToUnixTime();
                         Logger.Write(string.Format("Finished making attack call: {0}", timeAfter - timeBefore), LogLevel.Gym, ConsoleColor.White);
 
@@ -992,14 +999,14 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 _currentAttackerEnergy = attackResult.BattleUpdate.ActiveAttacker.CurrentEnergy;
                                 if (attacker == null) //start battle
                                 {
-                                    if (counter == 1 || FortDetails.GymStatusAndDefenders.GymDefender.Count == 1 || Session.LogicSettings.GymConfig.UsePokemonToAttackOnlyByCp) //first iteration, we have good attacker
+                                    if (counter == 1 || _fortDetails.GymStatusAndDefenders.GymDefender.Count == 1 || _session.LogicSettings.GymConfig.UsePokemonToAttackOnlyByCp) //first iteration, we have good attacker
                                         attacker = attackResult.BattleUpdate.ActiveAttacker.PokemonData;
                                     else //next iteration so we should to swith to proper attacker for new defender
                                     {
                                         var newAttacker = GetBestInBattle(attackResult.BattleUpdate.ActiveDefender.PokemonData);
                                         if (newAttacker != null && newAttacker.Id != attackResult.BattleUpdate.ActiveAttacker.PokemonData.Id)
                                         {
-                                            Session.GymState.SwithAttacker = new SwitchPokemonData(attackResult.BattleUpdate.ActiveAttacker.PokemonData.Id, newAttacker.Id);
+                                            _session.GymState.SwithAttacker = new SwitchPokemonData(attackResult.BattleUpdate.ActiveAttacker.PokemonData.Id, newAttacker.Id);
                                             wasSwithed = true;
                                         }
                                     }
@@ -1008,15 +1015,15 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 {
                                     bool informDie = true;
                                     bool extraWait = true;
-                                    if (!Session.LogicSettings.GymConfig.UsePokemonToAttackOnlyByCp) //we should manually switch pokemon to best one
+                                    if (!_session.LogicSettings.GymConfig.UsePokemonToAttackOnlyByCp) //we should manually switch pokemon to best one
                                     {
-                                        if (!wasSwithed && FortDetails.GymStatusAndDefenders.GymDefender.Count > 1) //swap call wasn't already called, do job
+                                        if (!wasSwithed && _fortDetails.GymStatusAndDefenders.GymDefender.Count > 1) //swap call wasn't already called, do job
                                         {
-                                            Session.GymState.MyTeam.Where(w => w.Attacker.Id == attacker.Id).FirstOrDefault().HpState = 0;
+                                            _session.GymState.MyTeam.Where(w => w.Attacker.Id == attacker.Id).FirstOrDefault().HpState = 0;
                                             var newAttacker = GetBestInBattle(attackResult.BattleUpdate.ActiveDefender.PokemonData);
                                             if (newAttacker != null && newAttacker.Id != attackResult.BattleUpdate.ActiveAttacker.PokemonData.Id)
                                             {
-                                                Session.GymState.SwithAttacker = new SwitchPokemonData(attackResult.BattleUpdate.ActiveAttacker.PokemonData.Id, newAttacker.Id);
+                                                _session.GymState.SwithAttacker = new SwitchPokemonData(attackResult.BattleUpdate.ActiveAttacker.PokemonData.Id, newAttacker.Id);
                                                 wasSwithed = true;
                                                 informDie = false; //don't inform, we just prepared swap call...
                                                 extraWait = false; //don't wait, this is in swap call
@@ -1044,9 +1051,9 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 attacker = attackResult.BattleUpdate.ActiveAttacker.PokemonData;
                                 defender = attackResult.BattleUpdate.ActiveDefender.PokemonData;
 
-                                var player = Session.Profile.PlayerData;
+                                var player = _session.Profile.PlayerData;
                                 await EnsureJoinTeam(player).ConfigureAwait(false);
-                                var ev = Gym.OwnedByTeam;
+                                var ev = _gym.OwnedByTeam;
                                 if (AttackStart > DateTime.Now) { AttackStart = DateTime.Now; }
 
                                 //Console.SetCursorPosition(0, Console.CursorTop - 1);
@@ -1064,18 +1071,18 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 Logger.Write($"Battle Timer: {100 - BattleTimer.TotalSeconds,3:##0} Sec remaining.", LogLevel.Info, ConsoleColor.White);
 
                                 if (attackResult != null && attackResult.BattleUpdate.ActiveAttacker != null)
-                                    Session.GymState.MyTeam.Where(w => w.Attacker.Id == attackResult.BattleUpdate.ActiveAttacker.PokemonData.Id).FirstOrDefault().HpState = attackResult.BattleUpdate.ActiveAttacker.CurrentHealth;
+                                    _session.GymState.MyTeam.Where(w => w.Attacker.Id == attackResult.BattleUpdate.ActiveAttacker.PokemonData.Id).FirstOrDefault().HpState = attackResult.BattleUpdate.ActiveAttacker.CurrentHealth;
                                 break;
                             case BattleState.Defeated:
                                 Logger.Write($"We have been defeated... (AttackGym)");
                                 return lastActions;
                             case BattleState.TimedOut:
                                 Logger.Write($"Our attack timed out...:");
-                                if (Session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                                    await PushNotificationClient.SendNotification(Session, "Gym Battle", $"Our attack timed out...:", true).ConfigureAwait(false);
+                                if (_session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
+                                    await PushNotificationClient.SendNotification(_session, "Gym Battle", $"Our attack timed out...:", true).ConfigureAwait(false);
                                 await Task.Delay(1000).ConfigureAwait(false);
                                 Logger.Write($"Try again...:");
-                                await Execute(Session, Session.CancellationTokenSource.Token, Gym, FortInfo).ConfigureAwait(false);
+                                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _fortInfo).ConfigureAwait(false);
                                 break;// return lastActions;
                             case BattleState.StateUnset:
                                 Logger.Write($"State was unset?: {attackResult}");
@@ -1111,56 +1118,56 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         }
 
-        public static DateTime DateTimeFromUnixTimestampMillis(long millis)
+        private static DateTime DateTimeFromUnixTimestampMillis(long millis)
         {
             return UnixEpoch.AddMilliseconds(millis);
         }
 
-        public static List<BattleAction> GetActions(long serverMs, PokemonData attacker, PokemonData defender, int energy, BattleAction lastAction, BattleAction lastSpecialAttack)
+        private static List<BattleAction> GetActions(long serverMs, PokemonData attacker, PokemonData defender, int energy, BattleAction lastAction, BattleAction lastSpecialAttack)
         {
             List<BattleAction> actions = new List<BattleAction>();
             DateTime now = DateTimeFromUnixTimestampMillis(serverMs);
             const int beforeDodge = 200;
 
-            if (Session.GymState.SwithAttacker != null)
+            if (_session.GymState.SwithAttacker != null)
             {
                 actions.Add(new BattleAction()
                 {
                     Type = BattleActionType.ActionSwapPokemon,
-                    DurationMs = Session.GymState.SwithAttacker.AttackDuration,
+                    DurationMs = _session.GymState.SwithAttacker.AttackDuration,
                     ActionStartMs = serverMs,
-                    ActivePokemonId = Session.GymState.SwithAttacker.OldAttacker,
-                    TargetPokemonId = Session.GymState.SwithAttacker.NewAttacker,
+                    ActivePokemonId = _session.GymState.SwithAttacker.OldAttacker,
+                    TargetPokemonId = _session.GymState.SwithAttacker.NewAttacker,
                     TargetIndex = -1,
                 });
-                Logger.Write(string.Format("Trying to switch pokemon: {0} to: {1}, serverMs: {2}", Session.GymState.SwithAttacker.OldAttacker, Session.GymState.SwithAttacker.NewAttacker, serverMs), LogLevel.Gym, ConsoleColor.White);
-                Session.GymState.SwithAttacker = null;
+                Logger.Write(string.Format("Trying to switch pokemon: {0} to: {1}, serverMs: {2}", _session.GymState.SwithAttacker.OldAttacker, _session.GymState.SwithAttacker.NewAttacker, serverMs), LogLevel.Gym, ConsoleColor.White);
+                _session.GymState.SwithAttacker = null;
                 return actions;
             }
 
             if (lastSpecialAttack != null && lastSpecialAttack.DamageWindowsStartTimestampMs > serverMs)
             {
                 long dodgeTime = lastSpecialAttack.DamageWindowsStartTimestampMs - beforeDodge;
-                if (Session.GymState.TimeToDodge < dodgeTime)
-                    Session.GymState.TimeToDodge = dodgeTime;
+                if (_session.GymState.TimeToDodge < dodgeTime)
+                    _session.GymState.TimeToDodge = dodgeTime;
             }
 
             if (attacker != null && defender != null)
             {
-                var normalMove = Session.GymState.MyPokemons.FirstOrDefault(f => f.Data.Id == attacker.Id).Attack;
-                var specialMove = Session.GymState.MyPokemons.FirstOrDefault(f => f.Data.Id == attacker.Id).SpecialAttack;
+                var normalMove = _session.GymState.MyPokemons.FirstOrDefault(f => f.Data.Id == attacker.Id).Attack;
+                var specialMove = _session.GymState.MyPokemons.FirstOrDefault(f => f.Data.Id == attacker.Id).SpecialAttack;
 
-                bool skipDodge = ((lastSpecialAttack?.DurationMs ?? 0) < normalMove.DurationMs + 550) || Session.LogicSettings.GymConfig.DontUseDodge; //if our normal attack is too slow and defender special is too fast so we should to only do dodge all the time then we totally skip dodge
+                bool skipDodge = ((lastSpecialAttack?.DurationMs ?? 0) < normalMove.DurationMs + 550) || _session.LogicSettings.GymConfig.DontUseDodge; //if our normal attack is too slow and defender special is too fast so we should to only do dodge all the time then we totally skip dodge
 
-                bool canDoSpecialAttack = Math.Abs(specialMove.EnergyDelta) <= energy && (!(Session.GymState.TimeToDodge > now.ToUnixTime() && Session.GymState.TimeToDodge < now.ToUnixTime() + specialMove.DurationMs) || skipDodge);
-                if (Session.LogicSettings.GymConfig.NotUsedSkills.Any(a => a.Key == attacker.PokemonId && a.Value == specialMove.MovementId))
+                bool canDoSpecialAttack = Math.Abs(specialMove.EnergyDelta) <= energy && (!(_session.GymState.TimeToDodge > now.ToUnixTime() && _session.GymState.TimeToDodge < now.ToUnixTime() + specialMove.DurationMs) || skipDodge);
+                if (_session.LogicSettings.GymConfig.NotUsedSkills.Any(a => a.Key == attacker.PokemonId && a.Value == specialMove.MovementId))
                     canDoSpecialAttack = false;
 
-                bool canDoAttack = !canDoSpecialAttack && (!(Session.GymState.TimeToDodge > now.ToUnixTime() && Session.GymState.TimeToDodge < now.ToUnixTime() + normalMove.DurationMs) || skipDodge);
+                bool canDoAttack = !canDoSpecialAttack && (!(_session.GymState.TimeToDodge > now.ToUnixTime() && _session.GymState.TimeToDodge < now.ToUnixTime() + normalMove.DurationMs) || skipDodge);
 
-                if (Session.GymState.TimeToDodge > now.ToUnixTime() && !canDoAttack && !canDoSpecialAttack && !skipDodge)
+                if (_session.GymState.TimeToDodge > now.ToUnixTime() && !canDoAttack && !canDoSpecialAttack && !skipDodge)
                 {
-                    Session.GymState.LastWentDodge = now.ToUnixTime();
+                    _session.GymState.LastWentDodge = now.ToUnixTime();
 
                     BattleAction dodge = new BattleAction()
                     {
@@ -1230,7 +1237,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             try
             {
-                result = await Session.Client.Fort.GymStartSession(Gym.Id, defenderId, attackingPokemonIds).ConfigureAwait(false);
+                result = await _session.Client.Fort.GymStartSession(_gym.Id, defenderId, attackingPokemonIds).ConfigureAwait(false);
                 await Task.Delay(2000).ConfigureAwait(false);
 
                 if (result.Result == GymStartSessionResponse.Types.Result.Success)
@@ -1269,16 +1276,16 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static async Task EnsureJoinTeam(PlayerData player)
         {
-            if (Session.Profile.PlayerData.Team == TeamColor.Neutral)
+            if (_session.Profile.PlayerData.Team == TeamColor.Neutral)
             {
-                var defaultTeam = (TeamColor)Enum.Parse(typeof(TeamColor), Session.LogicSettings.GymConfig.DefaultTeam);
-                var teamResponse = await Session.Client.Player.SetPlayerTeam(defaultTeam).ConfigureAwait(false);
+                var defaultTeam = (TeamColor)Enum.Parse(typeof(TeamColor), _session.LogicSettings.GymConfig.DefaultTeam);
+                var teamResponse = await _session.Client.Player.SetPlayerTeam(defaultTeam).ConfigureAwait(false);
                 if (teamResponse.Status == SetPlayerTeamResponse.Types.Status.Success)
                 {
                     player.Team = defaultTeam;
                 }
 
-                Session.EventDispatcher.Send(new GymTeamJoinEvent()
+                _session.EventDispatcher.Send(new GymTeamJoinEvent()
                 {
                     Team = defaultTeam,
                     Status = teamResponse.Status
@@ -1286,7 +1293,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             }
         }
 
-        internal static int GetGymAllCpOnGym(List<PokemonData> pokemonPlayers)//
+        private static int GetGymAllCpOnGym(List<PokemonData> pokemonPlayers)//
         {
             int allCp = 0;
             foreach (var x in pokemonPlayers)
@@ -1294,82 +1301,106 @@ namespace PoGo.NecroBot.Logic.Tasks
             return allCp;
         }
 
-        internal static bool CanAttackGym(FortData fort)
+        private static bool CanAttackGym()
         {
             try
             {
-                if (!Session.LogicSettings.GymConfig.EnableAttackGym)
+                if (!_session.LogicSettings.GymConfig.EnableAttackGym)
                     return false;
 
-                if (fort.OwnedByTeam == Session.Profile.PlayerData.Team)
+                if (_gym.OwnedByTeam == _session.Profile.PlayerData.Team)
                     return false;
 
-                GymGetInfoResponse gymDetails = Session.GymState.GymGetInfo(Session, fort);
+                GymGetInfoResponse gymDetails = _session.GymState.GymGetInfo(_session, _gym);
                 if (gymDetails?.Result != GymGetInfoResponse.Types.Result.Success)
                     return false;
 
-                if (Session.GymState.CapturedGymId.Equals(fort.Id) && fort.OwnedByTeam != Session.Profile.PlayerData.Team)
-                    gymDetails = Session.GymState.GymGetInfo(Session, fort, true);
+                if (_gym.RaidInfo != null)
+                {
+                    if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
+                    return false;
+                }
 
-                if (Session.GymState.CapturedGymId.Equals(fort.Id))
-                    fort.OwnedByTeam = Session.Profile.PlayerData.Team;
+                if (_session.GymState.CapturedGymId.Equals(_gym.Id) && _gym.OwnedByTeam != _session.Profile.PlayerData.Team)
+                    gymDetails = _session.GymState.GymGetInfo(_session, _gym, true);
+
+                if (_session.GymState.CapturedGymId.Equals(_gym.Id))
+                    _gym.OwnedByTeam = _session.Profile.PlayerData.Team;
             }
             catch (Exception ex)
             {
-                Logger.Write(string.Format("{0} -> {1} -> {2}", ex.Message, string.Join(", ", DeployedPokemons), fort), LogLevel.Gym, ConsoleColor.Red);
+                Logger.Write(string.Format("{0} -> {1} -> {2}", ex.Message, string.Join(", ", _deployedPokemons), _gym), LogLevel.Gym, ConsoleColor.Red);
                 return false;
             }
             return true;
         }
 
-        internal static bool CanBerrieGym(FortData fort)
+        private static bool CanAttackRaid()
         {
+            bool result = false;
             try
             {
-                if (!Session.LogicSettings.GymConfig.EnableGymBerries)
-                    return false;
-
-                if (fort.OwnedByTeam != Session.Profile.PlayerData.Team)
-                    return false;
-
-                GymGetInfoResponse gymDetails = Session.GymState.GymGetInfo(Session, fort);
-                if (gymDetails?.Result != GymGetInfoResponse.Types.Result.Success)
-                    return false;
-
-                if (Session.GymState.CapturedGymId.Equals(fort.Id) && fort.OwnedByTeam != Session.Profile.PlayerData.Team)
-                    gymDetails = Session.GymState.GymGetInfo(Session, fort, true);
-
-                if (Session.GymState.CapturedGymId.Equals(fort.Id))
-                    fort.OwnedByTeam = Session.Profile.PlayerData.Team;
-
-                if (string.IsNullOrEmpty(Session.GymState.BerriesGymId) || !Session.GymState.BerriesGymId.Equals(fort.Id))
+                if (_gym.RaidInfo != null)
                 {
-                    Session.GymState.BerriesGymId = fort.Id;
-                    Session.GymState.BerriesRound = 0;
+                    if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
+                        result = true;
                 }
             }
             catch (Exception ex)
             {
-                Logger.Write(string.Format("{0} -> {1} -> {2}", ex.Message, string.Join(", ", DeployedPokemons), fort), LogLevel.Gym, ConsoleColor.Red);
+                Logger.Write(string.Format("{0} -> {1} -> {2}", ex.Message, string.Join(", ", _deployedPokemons), _gym), LogLevel.Gym, ConsoleColor.Red);
+                result = false;
+            }
+            return result;
+        }
+
+        private static bool CanBerrieGym()
+        {
+            try
+            {
+                if (!_session.LogicSettings.GymConfig.EnableGymBerries)
+                    return false;
+
+                if (_gym.OwnedByTeam != _session.Profile.PlayerData.Team)
+                    return false;
+
+                GymGetInfoResponse gymDetails = _session.GymState.GymGetInfo(_session, _gym);
+                if (gymDetails?.Result != GymGetInfoResponse.Types.Result.Success)
+                    return false;
+
+                if (_session.GymState.CapturedGymId.Equals(_gym.Id) && _gym.OwnedByTeam != _session.Profile.PlayerData.Team)
+                    gymDetails = _session.GymState.GymGetInfo(_session, _gym, true);
+
+                if (_session.GymState.CapturedGymId.Equals(_gym.Id))
+                    _gym.OwnedByTeam = _session.Profile.PlayerData.Team;
+
+                if (string.IsNullOrEmpty(_session.GymState.BerriesGymId) || !_session.GymState.BerriesGymId.Equals(_gym.Id))
+                {
+                    _session.GymState.BerriesGymId = _gym.Id;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Write(string.Format("{0} -> {1} -> {2}", ex.Message, string.Join(", ", _deployedPokemons), _gym), LogLevel.Gym, ConsoleColor.Red);
                 return false;
             }
             return true;
         }
 
-        internal static bool CanDeployToGym(FortData fort)
+        private static bool CanDeployToGym()
         {
             try
             {
-                if (fort.OwnedByTeam != Session.Profile.PlayerData.Team)
+                if (_gym.OwnedByTeam != _session.Profile.PlayerData.Team)
                     return false;
 
-                if (DeployedPokemons.Any(a => a.DeployedFortId.Equals(fort.Id)))
+                if (_deployedPokemons.Any(a => a.DeployedFortId.Equals(_gym.Id)))
                     return false;
 
-                if (fort.OwnedByTeam == TeamColor.Neutral)
+                if (_gym.OwnedByTeam == TeamColor.Neutral)
                     return true;
 
-                GymGetInfoResponse gymDetails = Session.GymState.GymGetInfo(Session, fort);
+                GymGetInfoResponse gymDetails = _session.GymState.GymGetInfo(_session, _gym);
                 if (gymDetails?.Result != GymGetInfoResponse.Types.Result.Success)
                     return false;
 
@@ -1378,7 +1409,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             }
             catch (Exception ex)
             {
-                Logger.Write(string.Format("{0} -> {1} -> {2}", ex.Message, string.Join(", ", DeployedPokemons), fort), LogLevel.Gym, ConsoleColor.Red);
+                Logger.Write(string.Format("{0} -> {1} -> {2}", ex.Message, string.Join(", ", _deployedPokemons), _gym), LogLevel.Gym, ConsoleColor.Red);
                 return false;
             }
             return true;
@@ -1388,16 +1419,16 @@ namespace PoGo.NecroBot.Logic.Tasks
         {
             PokemonData pokemon = null;
             List<ulong> excluded = new List<ulong>();
-            var pokemonList = (await Session.Inventory.GetPokemons().ConfigureAwait(false)).ToList();
-            pokemonList.RemoveAll(x => Session.LogicSettings.GymConfig.ExcludeForGyms.Contains(x.PokemonId));
+            var pokemonList = (await _session.Inventory.GetPokemons().ConfigureAwait(false)).ToList();
+            pokemonList.RemoveAll(x => _session.LogicSettings.GymConfig.ExcludeForGyms.Contains(x.PokemonId));
 
-            if (Session.LogicSettings.GymConfig.Defenders != null && Session.LogicSettings.GymConfig.Defenders.Count > 0)
+            if (_session.LogicSettings.GymConfig.Defenders != null && _session.LogicSettings.GymConfig.Defenders.Count > 0)
             {
-                foreach (var def in Session.LogicSettings.GymConfig.Defenders.OrderByDescending(o => o.Priority))
+                foreach (var def in _session.LogicSettings.GymConfig.Defenders.OrderByDescending(o => o.Priority))
                 {
                     var defendersFromConfig = pokemonList.Where(w =>
                         w.PokemonId == def.Pokemon &&
-                        w.Id != Session.Profile.PlayerData.BuddyPokemon?.Id &&
+                        w.Id != _session.Profile.PlayerData.BuddyPokemon?.Id &&
                         string.IsNullOrEmpty(w.DeployedFortId) &&
                         w.Cp >= (def.MinCP ?? 0) &&
                         w.Cp <= (def.MaxCP ?? 5000) &&
@@ -1407,7 +1438,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     if (defendersFromConfig != null && defendersFromConfig.Count > 0)
                         foreach (var _pokemon in defendersFromConfig.OrderByDescending(o => o.Cp))
                         {
-                            if (Session.LogicSettings.GymConfig.HealDefendersBeforeApplyToGym)
+                            if (_session.LogicSettings.GymConfig.HealDefendersBeforeApplyToGym)
                             {
                                 if (_pokemon.Stamina <= 0)
                                     await RevivePokemon(_pokemon).ConfigureAwait(false);
@@ -1428,7 +1459,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             while (pokemon == null)
             {
                 pokemonList = pokemonList
-                    .Where(w => !excluded.Contains(w.Id) && w.Id != Session.Profile.PlayerData.BuddyPokemon?.Id)
+                    .Where(w => !excluded.Contains(w.Id) && w.Id != _session.Profile.PlayerData.BuddyPokemon?.Id)
                     .OrderByDescending(p => p.Cp)
                     .ToList();
 
@@ -1438,16 +1469,16 @@ namespace PoGo.NecroBot.Logic.Tasks
                 if (pokemonList.Count == 1)
                     pokemon = pokemonList.FirstOrDefault();
 
-                if (Session.LogicSettings.GymConfig.UseRandomPokemon && pokemon == null)
+                if (_session.LogicSettings.GymConfig.UseRandomPokemon && pokemon == null)
                     pokemon = pokemonList.ElementAt(new Random().Next(0, pokemonList.Count - 1));
 
                 pokemon = pokemonList.FirstOrDefault(p =>
-                    p.Cp <= Session.LogicSettings.GymConfig.MaxCPToDeploy &&
-                    PokemonInfo.GetLevel(p) <= Session.LogicSettings.GymConfig.MaxLevelToDeploy &&
+                    p.Cp <= _session.LogicSettings.GymConfig.MaxCPToDeploy &&
+                    PokemonInfo.GetLevel(p) <= _session.LogicSettings.GymConfig.MaxLevelToDeploy &&
                     string.IsNullOrEmpty(p.DeployedFortId)
                 );
 
-                if (Session.LogicSettings.GymConfig.HealDefendersBeforeApplyToGym)
+                if (_session.LogicSettings.GymConfig.HealDefendersBeforeApplyToGym)
                 {
                     if (pokemon.Stamina <= 0)
                         await RevivePokemon(pokemon).ConfigureAwait(false);

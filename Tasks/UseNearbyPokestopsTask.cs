@@ -195,7 +195,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             var forts = session.Forts
                 .Where(p => p.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime())
-                .Where(f => f.Type == FortType.Checkpoint || f.Type == FortType.Gym).ToList();
+                .Where(f => f != null).ToList();
 
             forts = forts.OrderBy(
                         p =>
@@ -230,7 +230,8 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                 if (session.LogicSettings.GymConfig.PrioritizeGymWithFreeSlot)
                 {
-                    var freeSlots = gyms.Where(w => w.OwnedByTeam == session.Profile.PlayerData.Team && UseGymBattleTask.CanDeployToGym(w));
+                    var freeSlots = gyms.Where(w => w.OwnedByTeam == session.Profile.PlayerData.Team &&
+                    session.GymState.GymGetInfo(session, w).GymStatusAndDefenders.GymDefender.Count() < 6);
                     if (freeSlots.Count() > 0)
                         return freeSlots.First();
                 }

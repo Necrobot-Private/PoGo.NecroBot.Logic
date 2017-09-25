@@ -133,10 +133,6 @@ namespace PoGo.NecroBot.Logic.Model.Settings
         [NecroBotConfig(Description = "List of Attackers to use for Gyms", Position = 22)]
         public List<TeamMemberConfig> Attackers { get; set; } = TeamMemberConfig.GetDefaultAttackers();
 
-        [JsonProperty(Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        [NecroBotConfig(Description = "List of Trainers to use for Gyms", Position = 23)]
-        public List<TeamMemberConfig> Trainers { get; set; } = TeamMemberConfig.GetDefaultTrainers();
-
         private static ICollection<KeyValuePair<PokemonId, PokemonMove>> GetDefaults()
         {
             return new List<KeyValuePair<PokemonId, PokemonMove>>()
@@ -207,19 +203,6 @@ namespace PoGo.NecroBot.Logic.Model.Settings
                 { new TeamMemberConfig() { Pokemon=PokemonId.Vaporeon, MinCP=2000 } },
                 { new TeamMemberConfig() { Pokemon=PokemonId.Gyarados, MinCP=2000 } },
                 { new TeamMemberConfig() { Pokemon=PokemonId.Snorlax, MinCP=2401 } },
-                { new TeamMemberConfig() { Pokemon=PokemonId.Charizard,  MinCP=2000, MaxCP=2499 } },
-                { new TeamMemberConfig() { Pokemon=PokemonId.Flareon,  MinCP=2000, MaxCP=2499 } }
-            };
-        }
-
-        internal static List<TeamMemberConfig> GetDefaultTrainers()
-        {
-            return new List<TeamMemberConfig>()
-            {
-                { new TeamMemberConfig() { Pokemon=PokemonId.Dragonite, MaxCP=2000, Priority=100 } },
-                { new TeamMemberConfig() { Pokemon=PokemonId.Vaporeon, MaxCP=2000, Priority=25 } },
-                { new TeamMemberConfig() { Pokemon=PokemonId.Gyarados, MaxCP=2000, Priority=50 } },
-                { new TeamMemberConfig() { Pokemon=PokemonId.Snorlax, MaxCP=2000, Priority=10 } },
                 { new TeamMemberConfig() { Pokemon=PokemonId.Charizard,  MinCP=2000, MaxCP=2499 } },
                 { new TeamMemberConfig() { Pokemon=PokemonId.Flareon,  MinCP=2000, MaxCP=2499 } }
             };

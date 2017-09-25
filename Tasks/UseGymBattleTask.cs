@@ -31,10 +31,10 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static int _startBattleCounter = 3;
         private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        private static FortDetailsResponse _fortInfo;
-        private static GymGetInfoResponse _fortDetails;
-        private static IEnumerable<PokemonData> _deployedPokemons;
-        private static FortData _gym;
+        private static FortDetailsResponse _fortInfo = new FortDetailsResponse();
+        private static GymGetInfoResponse _fortDetails = new GymGetInfoResponse();
+        private static IEnumerable<PokemonData> _deployedPokemons = null;
+        private static FortData _gym = new FortData();
         private static ISession _session;
 
         public static async Task Execute(ISession session, CancellationToken cancellationToken, FortData gym, FortDetailsResponse fortInfo)
@@ -47,6 +47,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             _gym = gym;
             _session = session;
             _fortDetails = session.GymState.GymGetInfo(session, gym, true);
+
             if (_fortDetails.Result != GymGetInfoResponse.Types.Result.Success)
                 return;
 
@@ -1316,18 +1317,11 @@ namespace PoGo.NecroBot.Logic.Tasks
                 if (_gym.OwnedByTeam == _session.Profile.PlayerData.Team)
                     return false;
 
-                GymGetInfoResponse gymDetails = _session.GymState.GymGetInfo(_session, _gym);
-                if (gymDetails?.Result != GymGetInfoResponse.Types.Result.Success)
-                    return false;
-
                 if (_gym.RaidInfo != null)
                 {
                     if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
-                    return false;
+                        return false;
                 }
-
-                if (_session.GymState.CapturedGymId.Equals(_gym.Id) && _gym.OwnedByTeam != _session.Profile.PlayerData.Team)
-                    gymDetails = _session.GymState.GymGetInfo(_session, _gym, true);
 
                 if (_session.GymState.CapturedGymId.Equals(_gym.Id))
                     _gym.OwnedByTeam = _session.Profile.PlayerData.Team;
@@ -1369,20 +1363,11 @@ namespace PoGo.NecroBot.Logic.Tasks
                 if (_gym.OwnedByTeam != _session.Profile.PlayerData.Team)
                     return false;
 
-                GymGetInfoResponse gymDetails = _session.GymState.GymGetInfo(_session, _gym);
-                if (gymDetails?.Result != GymGetInfoResponse.Types.Result.Success)
-                    return false;
-
-                if (_session.GymState.CapturedGymId.Equals(_gym.Id) && _gym.OwnedByTeam != _session.Profile.PlayerData.Team)
-                    gymDetails = _session.GymState.GymGetInfo(_session, _gym, true);
-
                 if (_session.GymState.CapturedGymId.Equals(_gym.Id))
                     _gym.OwnedByTeam = _session.Profile.PlayerData.Team;
 
                 if (string.IsNullOrEmpty(_session.GymState.BerriesGymId) || !_session.GymState.BerriesGymId.Equals(_gym.Id))
-                {
                     _session.GymState.BerriesGymId = _gym.Id;
-                }
             }
             catch (Exception ex)
             {
@@ -1405,11 +1390,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 if (_gym.OwnedByTeam == TeamColor.Neutral)
                     return true;
 
-                GymGetInfoResponse gymDetails = _session.GymState.GymGetInfo(_session, _gym);
-                if (gymDetails?.Result != GymGetInfoResponse.Types.Result.Success)
-                    return false;
-
-                if (gymDetails.GymStatusAndDefenders.GymDefender.Count() == 6)
+                if (_fortDetails.GymStatusAndDefenders.GymDefender.Count() == 6)
                     return false;
             }
             catch (Exception ex)

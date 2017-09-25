@@ -232,6 +232,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             var index = 0;
             bool isVictory = true;
             bool isFailedToStart = false;
+            bool isFailedTimeOut = false;
             List<BattleAction> battleActions = new List<BattleAction>();
             ulong defenderPokemonId = defenders.First().Id;
 
@@ -286,7 +287,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                         isVictory = false;
                         break;
                     case BattleState.TimedOut:
-                        isVictory = false;
+                        isFailedTimeOut = true;
                         break;
                     case BattleState.Victory:
                         isVictory = true;
@@ -338,6 +339,13 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             if (isVictory)
             {
+                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _fortInfo).ConfigureAwait(false);
+            }
+
+            if (isFailedTimeOut && _startBattleCounter > 0)
+            {
+                Logger.Write("TimeOut to try again (10 sec)");
+                await Task.Delay(10000).ConfigureAwait(false);
                 await Execute(_session, _session.CancellationTokenSource.Token, _gym, _fortInfo).ConfigureAwait(false);
             }
 
@@ -1080,10 +1088,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 Logger.Write($"Our attack timed out...:");
                                 if (_session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
                                     await PushNotificationClient.SendNotification(_session, "Gym Battle", $"Our attack timed out...:", true).ConfigureAwait(false);
-                                await Task.Delay(1000).ConfigureAwait(false);
-                                Logger.Write($"Try again...:");
-                                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _fortInfo).ConfigureAwait(false);
-                                break;// return lastActions;
+                                return lastActions;
                             case BattleState.StateUnset:
                                 Logger.Write($"State was unset?: {attackResult}");
                                 return lastActions;

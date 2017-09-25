@@ -51,6 +51,8 @@ namespace PoGo.NecroBot.Logic.Tasks
             _gym = gym;
             _gymDetails = fortDetails;
             _deployedPokemons = await session.Inventory.GetDeployedPokemons().ConfigureAwait(false);
+            if (MaxPlayers < fortDetails.GymStatusAndDefenders.GymDefender.Count())
+                MaxPlayers = fortDetails.GymStatusAndDefenders.GymDefender.Count();
 
             if (session.GymState.MoveSettings == null)
             {

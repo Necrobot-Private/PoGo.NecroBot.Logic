@@ -51,8 +51,6 @@ namespace PoGo.NecroBot.Logic.Tasks
             _gym = gym;
             _gymDetails = fortDetails;
             _deployedPokemons = await session.Inventory.GetDeployedPokemons().ConfigureAwait(false);
-            //if (MaxPlayers < fortDetails.GymStatusAndDefenders.GymDefender.Count())
-            //    MaxPlayers = fortDetails.GymStatusAndDefenders.GymDefender.Count();
 
             if (session.GymState.MoveSettings == null)
             {
@@ -226,9 +224,6 @@ namespace PoGo.NecroBot.Logic.Tasks
             //await Task.Delay(2000).ConfigureAwait(false);
 
             var index = 0;
-            bool isVictory = true;
-            bool isFailedToStart = false;
-            bool isFailedTimeOut = false;
             List<BattleAction> battleActions = new List<BattleAction>();
             ulong defenderPokemonId = defenders.First().Id;
             Logger.Write("Attacking Team consists of:\n", LogLevel.Gym);
@@ -236,12 +231,12 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             while (index < defenders.Count())
             {
+                newl = !newl;
                 Logger.Write(string.Join(", ",
                     _session.GymState.MyTeam.Select(s => string.Format("\n{0} ({1} HP / {2} CP)",
                     s.Attacker.PokemonId.ToString(),
                     s.HpState,
                     s.Attacker.Cp))), LogLevel.Gym, newl ? ConsoleColor.White : ConsoleColor.Yellow);
-                newl = !newl;
 
                 var thisAttackActions = new List<BattleAction>();
 
@@ -253,9 +248,6 @@ namespace PoGo.NecroBot.Logic.Tasks
                 catch (APIBadRequestException)
                 {
                     Logger.Write("Can't start battle", LogLevel.Gym, ConsoleColor.Red);
-                    isFailedToStart = true;
-                    isVictory = false;
-                    isFailedTimeOut = false;
                     _startBattleCounter--;
 
                     Logger.Write("Starting battle Results: " + result, LogLevel.Gym, ConsoleColor.Red);
@@ -267,13 +259,9 @@ namespace PoGo.NecroBot.Logic.Tasks
                     break;
                 }
 
-                index++;
-                // If we can't start battle in 10 tries, let's skip the gym
                 if (result.Result != GymStartSessionResponse.Types.Result.Success)
                 {
                     _session.EventDispatcher.Send(new GymErrorUnset { GymName = _gymInfo.Name });
-                    isVictory = false;
-                    isFailedTimeOut = false;
                     _startBattleCounter--;
                     break;
                 }
@@ -288,16 +276,12 @@ namespace PoGo.NecroBot.Logic.Tasks
                         battleActions.AddRange(thisAttackActions);
                         break;
                     case BattleState.Defeated:
-                        isVictory = false;
-                        break;
+                         break;
                     case BattleState.StateUnset:
-                        isVictory = false;
                         break;
                     case BattleState.TimedOut:
-                        isFailedTimeOut = true;
                         break;
                     case BattleState.Victory:
-                        isVictory = true;
                         break;
                     default:
                         Logger.Write($"Unhandled result starting gym battle:\n{result}");
@@ -305,67 +289,49 @@ namespace PoGo.NecroBot.Logic.Tasks
                 }
 
                 var rewarded = battleActions.Select(x => x.BattleResults?.PlayerXpAwarded).Where(x => x != null);
-                var lastAction = battleActions.LastOrDefault();
-
-                if (lastAction.Type == BattleActionType.ActionTimedOut ||
-                    lastAction.Type == BattleActionType.ActionUnset ||
-                    lastAction.Type == BattleActionType.ActionDefeat)
-                {
-                    isVictory = false;
-                    break;
-                }
-
                 var faintedPKM = battleActions.Where(x => x != null && x.Type == BattleActionType.ActionFaint).Select(x => x.ActivePokemonId).Distinct();
                 var livePokemons = pokemonDatas.Where(x => !faintedPKM.Any(y => y == x.Id));
                 var faintedPokemons = pokemonDatas.Where(x => faintedPKM.Any(y => y == x.Id));
                 pokemonDatas = livePokemons.Concat(faintedPokemons).ToArray();
+                index++;
             }
+
             Logger.Write(string.Join(Environment.NewLine, battleActions.OrderBy(o => o.ActionStartMs).Select(s => s).Distinct()), LogLevel.Gym, ConsoleColor.White);
-
-            if (isVictory)
-            {
-                var lastAction = battleActions.LastOrDefault();
-                var exp = lastAction.BattleResults.PlayerXpAwarded;
-                defenderPokemonId = unchecked((ulong)lastAction.BattleResults.NextDefenderPokemonId);
-
-                await Task.Delay(2000).ConfigureAwait(false);
-
-                Logger.Write($"(Battle) XP: {exp} | Players: {defenders.Count(),2:#0} | Next defender Id: {defenderPokemonId.ToString()}", LogLevel.Gym, ConsoleColor.Magenta);
-
-                if (_session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                    await PushNotificationClient.SendNotification(_session, $"Gym Battle",
-                                                                           $"We were victorious!\n" +
-                                                                           $"XP: {exp}" +
-                                                                           $"Players: {defenders.Count(),2:#0}", true).ConfigureAwait(false); // +
-
-                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
-            }
-
-            if (isFailedTimeOut && _startBattleCounter > 0)
-            {
-                Logger.Write("TimeOut to try again (10 sec)");
-                if (_session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
-                    await PushNotificationClient.SendNotification(_session, "Gym Battle", $"Our attack timed out...:", true).ConfigureAwait(false);
-                await Task.Delay(10000).ConfigureAwait(false);
-                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
-            }
-
-            if (isFailedToStart && _startBattleCounter > 0)
-            {
-                Logger.Write("Waiting extra time to try again (10 sec)");
-                await Task.Delay(10000).ConfigureAwait(false);
-                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
-            }
 
             var bAction = battleActions.LastOrDefault();
             if (bAction != null)
-                if ((bAction.Type == BattleActionType.ActionDefeat) || (bAction.Type == BattleActionType.ActionTimedOut))
+            {
+                if (bAction.Type == BattleActionType.ActionVictory)
                 {
-                    if (battleActions.Exists(p => p.Type == BattleActionType.ActionVictory))
-                    {
-                        await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
-                    }
+                    var lastAction = battleActions.LastOrDefault();
+                    var exp = lastAction.BattleResults.PlayerXpAwarded;
+                    defenderPokemonId = unchecked((ulong)lastAction.BattleResults.NextDefenderPokemonId);
+
+                    await Task.Delay(2000).ConfigureAwait(false);
+
+                    Logger.Write($"(Battle) XP: {exp} | Players: {defenders.Count(),2:#0} | Next defender Id: {defenderPokemonId.ToString()}", LogLevel.Gym, ConsoleColor.Magenta);
+
+                    if (_session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
+                        await PushNotificationClient.SendNotification(_session, $"Gym Battle",
+                                                                               $"We were victorious!\n" +
+                                                                               $"XP: {exp}" +
+                                                                               $"Players: {defenders.Count(),2:#0}", true).ConfigureAwait(false); // +
+
+                    await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
                 }
+                else if (bAction.Type == BattleActionType.ActionTimedOut)
+                {
+                    Logger.Write("TimeOut to try again (10 sec)");
+                    if (_session.LogicSettings.NotificationConfig.EnablePushBulletNotification == true)
+                        await PushNotificationClient.SendNotification(_session, "Gym Battle", $"Our attack timed out...:", true).ConfigureAwait(false);
+                    await Task.Delay(10000).ConfigureAwait(false);
+                    await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
+                }
+                else if (bAction.Type == BattleActionType.ActionDefeat)
+                {
+                    //
+                }
+            }
 
             if (_startBattleCounter <= 0)
                 _startBattleCounter = 3;

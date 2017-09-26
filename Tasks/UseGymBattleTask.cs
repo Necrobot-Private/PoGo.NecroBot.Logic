@@ -187,7 +187,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             if (defenders.Count() < 1)
                 return;
 
-            /*if (fortDetails.GymState.FortData.IsInBattle)
+            /*if (_gym.IsInBattle)
             {
                 Logger.Write("This gym is under attack now, we will skip it");
                 return false;
@@ -227,16 +227,14 @@ namespace PoGo.NecroBot.Logic.Tasks
             List<BattleAction> battleActions = new List<BattleAction>();
             ulong defenderPokemonId = defenders.First().Id;
             Logger.Write("Attacking Team consists of:\n", LogLevel.Gym);
-            bool newl = false;
 
             while (index < defenders.Count())
             {
-                newl = !newl;
                 Logger.Write(string.Join(", ",
                     _session.GymState.MyTeam.Select(s => string.Format("\n{0} ({1} HP / {2} CP)",
                     s.Attacker.PokemonId.ToString(),
                     s.HpState,
-                    s.Attacker.Cp))), LogLevel.Gym, newl ? ConsoleColor.White : ConsoleColor.Yellow);
+                    s.Attacker.Cp))), LogLevel.Info, ConsoleColor.Yellow);
 
                 var thisAttackActions = new List<BattleAction>();
 
@@ -276,12 +274,16 @@ namespace PoGo.NecroBot.Logic.Tasks
                         battleActions.AddRange(thisAttackActions);
                         break;
                     case BattleState.Defeated:
-                         break;
+                        battleActions.Add(new BattleAction() { Type = BattleActionType.ActionDefeat });
+                        break;
                     case BattleState.StateUnset:
+                        battleActions.Add(new BattleAction() { Type = BattleActionType.ActionUnset });
                         break;
                     case BattleState.TimedOut:
+                        battleActions.Add(new BattleAction() { Type = BattleActionType.ActionTimedOut });
                         break;
                     case BattleState.Victory:
+                        battleActions.Add(new BattleAction() { Type = BattleActionType.ActionVictory });
                         break;
                     default:
                         Logger.Write($"Unhandled result starting gym battle:\n{result}");
@@ -307,7 +309,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     var exp = lastAction.BattleResults.PlayerXpAwarded;
                     defenderPokemonId = unchecked((ulong)lastAction.BattleResults.NextDefenderPokemonId);
 
-                    await Task.Delay(2000).ConfigureAwait(false);
+                    await Task.Delay(5000).ConfigureAwait(false);
 
                     Logger.Write($"(Battle) XP: {exp} | Players: {defenders.Count(),2:#0} | Next defender Id: {defenderPokemonId.ToString()}", LogLevel.Gym, ConsoleColor.Magenta);
 
@@ -329,7 +331,15 @@ namespace PoGo.NecroBot.Logic.Tasks
                 }
                 else if (bAction.Type == BattleActionType.ActionDefeat)
                 {
-                    //
+                    Logger.Write("Defeat to try again (10 sec)");
+                    await Task.Delay(10000).ConfigureAwait(false);
+                    await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
+                }
+                else if (bAction.Type == BattleActionType.ActionUnset)
+                {
+                    Logger.Write("Gym Unset to try again (10 sec)");
+                    await Task.Delay(10000).ConfigureAwait(false);
+                    await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
                 }
             }
 
@@ -1060,17 +1070,17 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 break;
                             case BattleState.Defeated:
                                 Logger.Write($"We have been defeated... (AttackGym)", LogLevel.Gym, ConsoleColor.DarkYellow);
-                                break;
+                                return lastActions;
                             case BattleState.TimedOut:
                                 Logger.Write($"Our attack timed out...", LogLevel.Gym, ConsoleColor.DarkYellow);
-                                break;
+                                return lastActions;
                             case BattleState.StateUnset:
                                 Logger.Write($"State was unset? {attackResult}", LogLevel.Gym, ConsoleColor.DarkYellow);
-                                break;
+                                return lastActions;
                             case BattleState.Victory:
                                 Logger.Write($"We were victorious!", LogLevel.Gym, ConsoleColor.Green);
                                 await Task.Delay(2000).ConfigureAwait(false);
-                                break;
+                                return lastActions;
                             default:
                                 Logger.Write($"Unhandled attack response: {attackResult}", LogLevel.Gym, ConsoleColor.DarkYellow);
                                 continue;
@@ -1221,22 +1231,22 @@ namespace PoGo.NecroBot.Logic.Tasks
                     {
                         case BattleState.Active:
                             Logger.Write("Starting new battle...");
-                            break;
+                            return result;
                         case BattleState.Defeated:
                             Logger.Write($"We have been defeated in battle.");
-                            break;
+                            return result;
                         case BattleState.Victory:
                             Logger.Write($"We were victorious");
-                            break;
+                            return result;
                         case BattleState.StateUnset:
                             Logger.Write($"Error occoured: {result.Battle.BattleLog.State}");
-                            break;
+                            return result;
                         case BattleState.TimedOut:
                             Logger.Write($"Error occoured: {result.Battle.BattleLog.State}");
-                            break;
+                            return result;
                         default:
                             Logger.Write($"Unhandled occoured: {result.Battle.BattleLog.State}");
-                            break;
+                            return result;
                     }
                 }
             }
@@ -1277,6 +1287,9 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static bool CanAttackGym()
         {
+            if (!_session.LogicSettings.GymConfig.EnableAttackGym)
+                return false;
+
             if (_gym?.RaidInfo != null)
             {
                 if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)

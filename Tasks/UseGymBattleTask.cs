@@ -52,8 +52,6 @@ namespace PoGo.NecroBot.Logic.Tasks
             _gym = gym;
             _gymDetails = fortDetails;
             _deployedPokemons = await session.Inventory.GetDeployedPokemons().ConfigureAwait(false);
-            _defenders = _gymDetails.GymStatusAndDefenders.GymDefender.Select(p => p.MotivatedPokemon.Pokemon).ToList();
-
 
             if (session.GymState.MoveSettings == null)
             {
@@ -113,74 +111,71 @@ namespace PoGo.NecroBot.Logic.Tasks
             Logger.Write("Send Berries not yet released.", LogLevel.Gym, ConsoleColor.Red);
         }
 
-        private static void StartRaidAttackLogic()
+        private async static void StartRaidAttackLogic()
         {
-            //Check if raid or normal battle
-            try
+            GetRaidDetailsResponse raidDetails = await _session.Client.Fort.GetRaidDetails(_gym.Id, _gym.RaidInfo.RaidSeed).ConfigureAwait(false);
+
+            if (raidDetails.Result == GetRaidDetailsResponse.Types.Result.Success)
             {
-                if (_gym?.RaidInfo != null)
+                //IEnumerable<PokemonData> raidBoss = new List<PokemonData>
+                //{
+                //    raidDetails.RaidInfo.RaidPokemon
+                //};
+                //_defenders =  raidBoss;
+                //JoinLobbyResponse joinLobbyResult = await _session.Client.Fort.JoinLobby(_gym.Id, raidDetails.RaidInfo.RaidSeed, false).ConfigureAwait(false);
+                //SetLobbyVisibilityResponse setLobbyVisibility = await _session.Client.Fort.SetLobbyVisibility(_gym.Id, raidDetails.RaidInfo.RaidSeed);
+                //SetLobbyPokemonResponse setLobbyPokemon = await _session.Client.Fort.SetLobbyPokemon(_gym.Id, raidDetails.RaidInfo.RaidSeed);
+                //StartRaidBattleResponse startRaidBattle = await _session.Client.Fort.StartRaidBattle(_gym.Id, raidDetails.RaidInfo.RaidSeed).ConfigureAwait(false);
+                //AttackRaidBattleResponse attackRaid = await _session.Client.Fort.AttackRaidBattle(_gym.Id, raidDetails.RaidInfo.RaidSeed).ConfigureAwait(false);
+                //LeaveLobbyResponse leaveLobbyResult = await _session.Client.Fort.LeaveLobby(_gym.Id, raidDetails.RaidInfo.RaidSeed);
+
+                DateTime expires = new DateTime(0);
+                TimeSpan time = new TimeSpan(0);
+
+                if (raidDetails.RaidInfo.RaidBattleMs > DateTime.UtcNow.ToUnixTime())
                 {
-                    DateTime expires = new DateTime(0);
-                    TimeSpan time = new TimeSpan(0);
-
-                    if (_gym.RaidInfo.RaidBattleMs > DateTime.UtcNow.ToUnixTime())
+                    expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(raidDetails.RaidInfo.RaidBattleMs);
+                    time = expires - DateTime.UtcNow;
+                    if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
                     {
-                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(_gym.RaidInfo.RaidBattleMs);
-                        time = expires - DateTime.UtcNow;
-                        if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
-                        {
-                            string str = $"Next RAID starts in: {time.Hours:00}h:{time.Minutes:00}m at: {(DateTime.Now + time).Hour:00}:{(DateTime.Now + time).Minute:00} Local time";
-                            Logger.Write($"{str}.", LogLevel.Gym);
-                        }
-                    }
-
-                    if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
-                    {
-                        //Raid modes 
-                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(_gym.RaidInfo.RaidEndMs);
-                        time = expires - DateTime.UtcNow;
-                        if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
-                        {
-                            string boss = $"Boss: {_session.Translation.GetPokemonTranslation(_gym.RaidInfo.RaidPokemon.PokemonId)} CP: {_gym.RaidInfo.RaidPokemon.Cp}";
-                            string str = $"Local RAID ends in: {time.Hours:00}h:{time.Minutes:00}m at: {(DateTime.Now + time).Hour:00}:{(DateTime.Now + time).Minute:00} Local time {boss}";
-                            Logger.Write($"{str}.", LogLevel.Gym);
-
-                            //for dev
-                            Logger.Write("Raid boos is present. Raids battle not yet released.", LogLevel.Gym, ConsoleColor.Red);
-                        }
-
-                        // new code or new task....
-
-                        //var raidDetails = await session.Client.Fort.GetRaidDetails(gym.Id, gym.RaidInfo.RaidSeed).ConfigureAwait(false);
-                        //var joinLobbyResult = await session.Client.Fort.JoinLobby(gym.Id, gym.RaidInfo.RaidSeed, false).ConfigureAwait(false);
-                        //var setLobbyVisibility = await session.Client.Fort.SetLobbyVisibility(gym.Id, gym.RaidInfo.RaidSeed);
-                        //var setLobbyPokemon = await session.Client.Fort.SetLobbyPokemon(gym.Id, gym.RaidInfo.RaidSeed);
-                        //var startRaidBattle = await session.Client.Fort.StartRaidBattle(gym.Id, gym.RaidInfo.RaidSeed).ConfigureAwait(false);
-                        //var attackRaid = await session.Client.Fort.AttackRaidBattle(gym.Id, gym.RaidInfo.RaidSeed).ConfigureAwait(false);
-                        //var leaveLobbyResult = await session.Client.Fort.LeaveLobby(gym.Id, gym.RaidInfo.RaidSeed);
-                        //
-                    }
-
-                    if (_gym.RaidInfo.RaidSpawnMs > DateTime.UtcNow.ToUnixTime())
-                    {
-                        expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(_gym.RaidInfo.RaidSpawnMs);
-                        time = expires - DateTime.UtcNow;
-                        if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
-                        {
-                            Logger.Write("Raid battle is runing...", LogLevel.Gym);
-                        }
+                        string str = $"Next RAID starts in: {time.Hours:00}h:{time.Minutes:00}m at: {(DateTime.Now + time).Hour:00}:{(DateTime.Now + time).Minute:00} Local time";
+                        Logger.Write($"{str}.", LogLevel.Gym);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.Write(ex.Message, LogLevel.Gym, ConsoleColor.Red);
+
+                if (raidDetails.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
+                {
+                    //Raid modes 
+                    expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(raidDetails.RaidInfo.RaidEndMs);
+                    time = expires - DateTime.UtcNow;
+                    if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
+                    {
+                        string boss = $"Boss: {_session.Translation.GetPokemonTranslation(raidDetails.RaidInfo.RaidPokemon.PokemonId)} CP: {raidDetails.RaidInfo.RaidPokemon.Cp}";
+                        string str = $"Local RAID ends in: {time.Hours:00}h:{time.Minutes:00}m at: {(DateTime.Now + time).Hour:00}:{(DateTime.Now + time).Minute:00} Local time {boss}";
+                        Logger.Write($"{str}.", LogLevel.Gym);
+
+                        //for dev
+                        Logger.Write("Raid boos is present. Raids battle not yet released.", LogLevel.Gym, ConsoleColor.Red);
+                    }
+                }
+
+                if (raidDetails.RaidInfo.RaidSpawnMs > DateTime.UtcNow.ToUnixTime())
+                {
+                    expires = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(raidDetails.RaidInfo.RaidSpawnMs);
+                    time = expires - DateTime.UtcNow;
+                    if (!(expires.Ticks == 0 || time.TotalSeconds < 0))
+                    {
+                        Logger.Write("Raid battle is runing...", LogLevel.Gym);
+                    }
+                }
             }
         }
 
         private static async Task StartGymAttackLogic()
         {
-            if (_defenders.Count() < 1)
+            _defenders = new List<PokemonData>(_gymDetails.GymStatusAndDefenders.GymDefender.Select(p => p.MotivatedPokemon.Pokemon));
+
+            if (!(_defenders.Count() > 0))
                 return;
 
             /*if (_gym.IsInBattle)
@@ -956,7 +951,6 @@ namespace PoGo.NecroBot.Logic.Tasks
                         Logger.Write(string.Format("Last retrieved action was: {0}", a2), LogLevel.Gym, ConsoleColor.Red);
                         Logger.Write(string.Format("Actions to perform were: {0}", string.Join(", ", attackActionz)), LogLevel.Gym, ConsoleColor.Red);
                         Logger.Write(string.Format("Attacker was: {0}, defender was: {1}", attacker, defender), LogLevel.Gym, ConsoleColor.Red);
-
                         continue;
                     };
 
@@ -966,12 +960,11 @@ namespace PoGo.NecroBot.Logic.Tasks
                     {
                         Logger.Write("Attack success", LogLevel.Gym, ConsoleColor.Green);
                         defender = attackResult.BattleUpdate.ActiveDefender?.PokemonData;
+                        /*
+                         * Debug mode
+                         *
                         if (attackResult.BattleUpdate.BattleLog != null && attackResult.BattleUpdate.BattleLog.BattleActions.Count > 0)
                         {
-
-                            /*
-                             * Debug mode
-                             * 
                             var result = attackResult.BattleUpdate.BattleLog.BattleActions.OrderBy(o => o.ActionStartMs).Distinct();
                             lastActions.AddRange(result);
                             try
@@ -979,8 +972,9 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 Logger.Write("Result -> \r\n" + string.Join(Environment.NewLine, result), LogLevel.Gym, ConsoleColor.White);
                             }
                             catch (Exception) { }
-                            */
                         }
+                        */
+
                         serverMs = attackResult.BattleUpdate.BattleLog.ServerMs;
 
                         switch (attackResult.BattleUpdate.BattleLog.State)
@@ -1068,18 +1062,15 @@ namespace PoGo.NecroBot.Logic.Tasks
                                 Logger.Write($"We have been defeated... (AttackGym)", LogLevel.Gym, ConsoleColor.DarkYellow);
                                 return lastActions;
                             case BattleState.TimedOut:
-                                Logger.Write($"Our attack timed out...", LogLevel.Gym, ConsoleColor.DarkYellow);
+                                Logger.Write($"Our attack timed out...  (AttackGym)", LogLevel.Gym, ConsoleColor.DarkYellow);
                                 return lastActions;
                             case BattleState.StateUnset:
-                                Logger.Write($"State was unset? {attackResult}", LogLevel.Gym, ConsoleColor.DarkYellow);
+                                Logger.Write($"State was unset!  (AttackGym)", LogLevel.Gym, ConsoleColor.DarkYellow);
                                 return lastActions;
                             case BattleState.Victory:
-                                Logger.Write($"We were victorious!", LogLevel.Gym, ConsoleColor.Green);
+                                Logger.Write($"We were victorious!  (AttackGym)", LogLevel.Gym, ConsoleColor.Green);
                                 await Task.Delay(2000).ConfigureAwait(false);
                                 return lastActions;
-                            default:
-                                Logger.Write($"Unhandled attack response: {attackResult}", LogLevel.Gym, ConsoleColor.DarkYellow);
-                                continue;
                         }
                     }
                     else
@@ -1096,6 +1087,8 @@ namespace PoGo.NecroBot.Logic.Tasks
                     Logger.Write("Bad request sent to server -", LogLevel.Gym, ConsoleColor.Red);
                     Logger.Write("NOT finished attack", LogLevel.Gym, ConsoleColor.Red);
                     Logger.Write(e.Message, LogLevel.Gym, ConsoleColor.Red);
+                    lastActions.Add(new BattleAction() { Type = BattleActionType.ActionUnset });
+                    return lastActions;
                 };
             }
             return lastActions;
@@ -1286,11 +1279,9 @@ namespace PoGo.NecroBot.Logic.Tasks
             if (!_session.LogicSettings.GymConfig.EnableAttackGym)
                 return false;
 
-            if (_gym?.RaidInfo != null)
-            {
-                if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
-                    return false;
-            }
+            if (!_session.LogicSettings.GymConfig.EnableAttackRaid)
+                return false;
+
             return true;
         }
 
@@ -1299,12 +1290,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             if (!_session.LogicSettings.GymConfig.EnableAttackRaid)
                 return false;
 
-            if (_gym?.RaidInfo != null)
-            {
-                if (_gym.RaidInfo.RaidPokemon.PokemonId != PokemonId.Missingno)
-                    return true;
-            }
-            return false;
+            return true;
         }
 
         private static bool CanBerrieGym()

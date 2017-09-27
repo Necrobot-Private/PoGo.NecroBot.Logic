@@ -285,14 +285,14 @@ namespace PoGo.NecroBot.Logic.Tasks
                         battleActions.Add(new BattleAction() { Type = BattleActionType.ActionUnset });
                         break;
                 }
-
-                var rewarded = battleActions.Select(x => x.BattleResults?.PlayerXpAwarded).Where(x => x != null);
-                var faintedPKM = battleActions.Where(x => x != null && x.Type == BattleActionType.ActionFaint).Select(x => x.ActivePokemonId).Distinct();
-                var livePokemons = pokemonDatas.Where(x => !faintedPKM.Any(y => y == x.Id));
-                var faintedPokemons = pokemonDatas.Where(x => faintedPKM.Any(y => y == x.Id));
-                pokemonDatas = livePokemons.Concat(faintedPokemons).ToArray();
                 index++;
             }
+
+            var rewarded = battleActions.Select(x => x.BattleResults?.PlayerXpAwarded).Where(x => x != null);
+            var faintedPKM = battleActions.Where(x => x != null && x.Type == BattleActionType.ActionFaint).Select(x => x.ActivePokemonId).Distinct();
+            var livePokemons = pokemonDatas.Where(x => !faintedPKM.Any(y => y == x.Id));
+            var faintedPokemons = pokemonDatas.Where(x => faintedPKM.Any(y => y == x.Id));
+            pokemonDatas = livePokemons.Concat(faintedPokemons).ToArray();
 
             Logger.Write(string.Join(Environment.NewLine, battleActions.OrderBy(o => o.ActionStartMs).Select(s => s).Distinct()), LogLevel.Gym, ConsoleColor.White);
 

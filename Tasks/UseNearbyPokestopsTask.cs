@@ -75,7 +75,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     var fortDetails = await session.Client.Fort.GymGetInfo(pokeStop.Id, pokeStop.Latitude, pokeStop.Longitude).ConfigureAwait(false);
                     if (fortDetails.Result == GymGetInfoResponse.Types.Result.Success)
                     {
-                        await UseGymBattleTask.Execute(session, cancellationToken, pokeStop).ConfigureAwait(false);
+                        await UseGymBattleTask.Execute(session, cancellationToken, pokeStop, fortInfo, fortDetails).ConfigureAwait(false);
                     }
                 }
 
@@ -628,7 +628,10 @@ namespace PoGo.NecroBot.Logic.Tasks
             session.AddForts(mapObjects.MapCells.SelectMany(p => p.Forts).ToList());
 
             var pokeStops = mapObjects.MapCells.SelectMany(i => i.Forts)
-                .Where(i => i.Id != string.Empty && i.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime() &&
+                .Where(
+                    i =>
+                        (i.Type == FortType.Checkpoint || i.Type == FortType.Gym) &&
+                        i.CooldownCompleteTimestampMs < DateTime.UtcNow.ToUnixTime() &&
                         (
                             LocationUtils.CalculateDistanceInMeters(
                                 session.Settings.DefaultLatitude, session.Settings.DefaultLongitude,

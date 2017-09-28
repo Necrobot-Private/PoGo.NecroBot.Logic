@@ -299,7 +299,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             var index = 0;
             List<BattleAction> battleActions = new List<BattleAction>();
             ulong defenderPokemonId = _defenders.First().Id;
-            Logger.Write("Attacking Team consists of:\n", LogLevel.Gym);
+            Logger.Write("Attacking Team consists of:", LogLevel.Gym);
 
             while (index < _defenders.Count())
             {
@@ -323,13 +323,13 @@ namespace PoGo.NecroBot.Logic.Tasks
                         break;
                     case GymStartSessionResponse.Types.Result.ErrorGymEmpty:
                         _session.EventDispatcher.Send(new GymEventMessages { Message = $"{_gymInfo.Name} Result: Error Gym Empty", consoleColor = ConsoleColor.Yellow });
-                        //await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
-                        await DeployPokemonToGym().ConfigureAwait(false);
+                        await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
+                        //await DeployPokemonToGym().ConfigureAwait(false);
                         break;
                     case GymStartSessionResponse.Types.Result.ErrorGymNeutral:
                         _session.EventDispatcher.Send(new GymEventMessages { Message = $"{_gymInfo.Name} Result: Error Gym Neutral", consoleColor = ConsoleColor.Yellow });
-                        //await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
-                        await DeployPokemonToGym().ConfigureAwait(false);
+                        await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
+                        //await DeployPokemonToGym().ConfigureAwait(false);
                         break;
                     case GymStartSessionResponse.Types.Result.ErrorGymNotFound:
                         _session.EventDispatcher.Send(new GymEventMessages { Message = $"{_gymInfo.Name} Result: Error Gym Not Found", consoleColor = ConsoleColor.Red });
@@ -342,6 +342,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     case GymStartSessionResponse.Types.Result.ErrorInvalidDefender:
                         _session.EventDispatcher.Send(new GymEventMessages { Message = $"{_gymInfo.Name} Result: Error Invalid Defender", consoleColor = ConsoleColor.Red });
                         //await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
+                        await DeployPokemonToGym().ConfigureAwait(false);
                         break;
                     case GymStartSessionResponse.Types.Result.ErrorNotInRange:
                         _session.EventDispatcher.Send(new GymEventMessages { Message = $"{_gymInfo.Name} Result: Error Not In Range", consoleColor = ConsoleColor.Red });
@@ -1363,15 +1364,14 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static async Task<GymStartSessionResponse> GymStartSession(IEnumerable<PokemonData> attackers, ulong defenderId)
         {
-            IEnumerable<PokemonData> currentPokemons = attackers;
-            var pokemonDatas = currentPokemons as PokemonData[] ?? currentPokemons.ToArray();
-            var attackerPokemons = pokemonDatas.Select(pokemon => pokemon.Id);
-            var attackingPokemonIds = attackerPokemons as ulong[] ?? attackerPokemons.ToArray();
-            GymStartSessionResponse result = null;
-
             try
             {
-                result = await _session.Client.Fort.GymStartSession(_gym.Id, defenderId, attackingPokemonIds).ConfigureAwait(false);
+                IEnumerable<PokemonData> currentPokemons = attackers;
+                var pokemonDatas = currentPokemons as PokemonData[] ?? currentPokemons.ToArray();
+                var attackerPokemons = pokemonDatas.Select(pokemon => pokemon.Id);
+                var attackingPokemonIds = attackerPokemons as ulong[] ?? attackerPokemons.ToArray();
+
+                GymStartSessionResponse result = await _session.Client.Fort.GymStartSession(_gym.Id, defenderId, attackingPokemonIds).ConfigureAwait(false);
                 await Task.Delay(2000).ConfigureAwait(false);
 
                 if (result.Result == GymStartSessionResponse.Types.Result.Success)
@@ -1379,32 +1379,33 @@ namespace PoGo.NecroBot.Logic.Tasks
                     switch (result.Battle.BattleLog.State)
                     {
                         case BattleState.Active:
-                            Logger.Write("Starting new battle...");
+                            Logger.Write("Starting new battle...", LogLevel.Gym, ConsoleColor.Green);
                             return result;
                         case BattleState.Defeated:
-                            Logger.Write($"We have been defeated in battle.");
+                            Logger.Write($"We have been defeated in battle.", LogLevel.Gym, ConsoleColor.Yellow);
                             return result;
                         case BattleState.Victory:
-                            Logger.Write($"We were victorious");
+                            Logger.Write($"We were victorious", LogLevel.Gym, ConsoleColor.Green);
                             return result;
                         case BattleState.StateUnset:
-                            Logger.Write($"Error occoured: {result.Battle.BattleLog.State}");
+                            Logger.Write($"State Unset", LogLevel.Gym, ConsoleColor.Red);
                             return result;
                         case BattleState.TimedOut:
-                            Logger.Write($"Error occoured: {result.Battle.BattleLog.State}");
+                            Logger.Write($"Timed Out", LogLevel.Gym, ConsoleColor.Red);
                             return result;
                         default:
-                            Logger.Write($"Unhandled occoured: {result.Battle.BattleLog.State}");
+                            Logger.Write($"Default", LogLevel.Gym, ConsoleColor.Red);
                             return result;
                     }
                 }
+                return result;
             }
             catch (APIBadRequestException e)
             {
-                Logger.Write("Gym Details: " + e.Message, LogLevel.Error);
-                return result;
+                e.Data.Clear();
+                Logger.Write("Gym Details: API Bad Request Exception", LogLevel.Gym, ConsoleColor.Red);
+                return null;
             }
-            return result;
         }
 
         private static async Task EnsureJoinTeam(PlayerData player)

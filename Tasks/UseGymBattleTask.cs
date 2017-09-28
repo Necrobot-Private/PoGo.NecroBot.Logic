@@ -38,7 +38,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         public const int MaxPlayers = 6;
 
-        public static async Task Execute(ISession session, CancellationToken cancellationToken, FortData gym, FortDetailsResponse fortInfo, GymGetInfoResponse fortDetails)
+        public static async Task Execute(ISession session, CancellationToken cancellationToken, FortData gym, FortDetailsResponse gymInfo, GymGetInfoResponse gymDetails)
         {
             cancellationToken.ThrowIfCancellationRequested();
             TinyIoC.TinyIoCContainer.Current.Resolve<MultiAccountManager>().ThrowIfSwitchAccountRequested();
@@ -46,9 +46,11 @@ namespace PoGo.NecroBot.Logic.Tasks
             if (!session.LogicSettings.GymConfig.Enable || gym.Type != FortType.Gym) return;
 
             _session = session;
-            _gymInfo = fortInfo;
+
+            _gymInfo = gymInfo;
             _gym = gym;
-            _gymDetails = fortDetails;
+            _gymDetails = gymDetails;
+
             _deployedPokemons = await session.Inventory.GetDeployedPokemons().ConfigureAwait(false);
 
             if (session.GymState.MoveSettings == null)
@@ -60,14 +62,14 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             var distance = session.Navigation.WalkStrategy.CalculateDistance(session.Client.CurrentLatitude, session.Client.CurrentLongitude, gym.Latitude, gym.Longitude);
 
-            if (fortInfo != null)
+            if (_gymInfo != null)
             {
                 session.EventDispatcher.Send(new GymWalkToTargetEvent()
                 {
-                    Name = fortInfo.Name,
+                    Name = _gymInfo.Name,
                     Distance = distance,
-                    Latitude = fortInfo.Latitude,
-                    Longitude = fortInfo.Longitude
+                    Latitude = _gymInfo.Latitude,
+                    Longitude = _gymInfo.Longitude
                 });
 
                 var player = session.Profile.PlayerData;
@@ -75,12 +77,12 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                 session.EventDispatcher.Send(new GymDetailInfoEvent()
                 {
-                    Team = gym.OwnedByTeam,
+                    Team = _gym.OwnedByTeam,
                     Players = _gymDetails.GymStatusAndDefenders.GymDefender.Count(),
                     Name = _gymDetails.Name,
                 });
 
-                if (gym.OwnedByTeam == player.Team || gym.OwnedByTeam == TeamColor.Neutral)
+                if (_gym.OwnedByTeam == player.Team || _gym.OwnedByTeam == TeamColor.Neutral)
                 {
                     if (CanDeployToGym())
                         await DeployPokemonToGym().ConfigureAwait(false);

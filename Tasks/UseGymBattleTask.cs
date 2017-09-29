@@ -1097,7 +1097,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
                         if (attackActionz.Any(a => a.Type == BattleActionType.ActionSwapPokemon))
                         {
-                            Logger.Write("Etra wait after SWAP call", LogLevel.Gym, ConsoleColor.Green);
+                            Logger.Write("Extra wait after SWAP call", LogLevel.Gym, ConsoleColor.Green);
                             await Task.Delay(2000).ConfigureAwait(false);
                         }
                     }
@@ -1329,7 +1329,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                         action2.DurationMs = specialMove.DurationMs;
                         action2.DamageWindowsStartTimestampMs = specialMove.DamageWindowStartMs;
                         action2.DamageWindowsEndTimestampMs = specialMove.DamageWindowEndMs;
-                        Logger.Write(string.Format("Trying to make an special attack {0}, on: {1}, duration: {2}"
+                        Logger.Write(string.Format("Trying to make a special attack {0}, on: {1}, duration: {2}"
                             , specialMove.MovementId, _gymInfo.Name, specialMove.DurationMs), LogLevel.Gym, ConsoleColor.White);
                     }
                     else if (canDoAttack)
@@ -1338,7 +1338,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                         action2.DurationMs = normalMove.DurationMs;
                         action2.DamageWindowsStartTimestampMs = normalMove.DamageWindowStartMs;
                         action2.DamageWindowsEndTimestampMs = normalMove.DamageWindowEndMs;
-                        Logger.Write(string.Format("Trying to make an normal attack {0}, on: {1}, duration: {2}"
+                        Logger.Write(string.Format("Trying to make a normal attack {0}, on: {1}, duration: {2}"
                             , normalMove.MovementId, _gymInfo.Name, normalMove.DurationMs), LogLevel.Gym, ConsoleColor.White);
                     }
                     else

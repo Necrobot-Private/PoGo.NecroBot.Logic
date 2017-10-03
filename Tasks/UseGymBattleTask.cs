@@ -343,8 +343,8 @@ namespace PoGo.NecroBot.Logic.Tasks
                         break;
                     case GymStartSessionResponse.Types.Result.ErrorInvalidDefender:
                         _session.EventDispatcher.Send(new GymEventMessages { Message = $"{_gymInfo.Name} Result: Error Invalid Defender", consoleColor = ConsoleColor.Red });
-                        //await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
-                        await DeployPokemonToGym().ConfigureAwait(false);
+                        await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails).ConfigureAwait(false);
+                        //await DeployPokemonToGym().ConfigureAwait(false);
                         break;
                     case GymStartSessionResponse.Types.Result.ErrorNotInRange:
                         _session.EventDispatcher.Send(new GymEventMessages { Message = $"{_gymInfo.Name} Result: Error Not In Range", consoleColor = ConsoleColor.Red });
@@ -1377,6 +1377,7 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static async Task<GymStartSessionResponse> GymStartSession(IEnumerable<PokemonData> attackers, ulong defenderId)
         {
+            GymStartSessionResponse result = null;
             try
             {
                 IEnumerable<PokemonData> currentPokemons = attackers;
@@ -1384,7 +1385,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 var attackerPokemons = pokemonDatas.Select(pokemon => pokemon.Id);
                 var attackingPokemonIds = attackerPokemons as ulong[] ?? attackerPokemons.ToArray();
 
-                GymStartSessionResponse result = await _session.Client.Fort.GymStartSession(_gym.Id, defenderId, attackingPokemonIds).ConfigureAwait(false);
+                result = await _session.Client.Fort.GymStartSession(_gym.Id, defenderId, attackingPokemonIds).ConfigureAwait(false);
                 await Task.Delay(2000).ConfigureAwait(false);
 
                 if (result.Result == GymStartSessionResponse.Types.Result.Success)
@@ -1416,15 +1417,18 @@ namespace PoGo.NecroBot.Logic.Tasks
             catch (APIBadRequestException e)
             {
                 e.Data.Clear();
-                Logger.Write("Gym Details: API Bad Request Exception", LogLevel.Gym, ConsoleColor.Red);
-                return null;
+                Logger.Write("Gym Details: API Bad Request Exception. Try again...", LogLevel.Gym, ConsoleColor.Red);
+                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails);
+                //return null;
             }
             catch (NullReferenceException e)
             {
                 e.Data.Clear();
-                Logger.Write("Gym Details: Null Reference Exception", LogLevel.Gym, ConsoleColor.Red);
-                return null;
+                Logger.Write("Gym Details: Null Reference Exception. Try again...", LogLevel.Gym, ConsoleColor.Red);
+                await Execute(_session, _session.CancellationTokenSource.Token, _gym, _gymInfo, _gymDetails);
+                ///return null;
             }
+            return result;
         }
 
         private static async Task EnsureJoinTeam(PlayerData player)

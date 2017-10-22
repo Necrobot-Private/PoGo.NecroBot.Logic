@@ -313,13 +313,11 @@ namespace PoGo.NecroBot.Logic.Tasks
 
 
 
-                Logger.Write("Attacking Team consists of:", LogLevel.Gym);
-                Logger.Write(string.Join(", ",
-                    Session.GymState.MyTeam.Select(s => string.Format("\n{0} ({1} HP / {2} CP)",
+                Logger.Write("Attacking Team consists of:" + string.Join(", ",
+                    Session.GymState.MyTeam.Select(s => string.Format("{0} ({1} HP / {2} CP)",
                     s.Attacker.PokemonId.ToString(),
                     s.HpState,
-                    s.Attacker.Cp))), LogLevel.Info, ConsoleColor.Yellow);
-
+                    s.Attacker.Cp))), LogLevel.Gym, ConsoleColor.Yellow);
 
                 //await Task.Delay(2000).ConfigureAwait(false);
                 List<BattleAction> battleActions = new List<BattleAction>();

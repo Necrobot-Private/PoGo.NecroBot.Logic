@@ -325,6 +325,8 @@ namespace PoGo.NecroBot.Logic.Tasks
                     s.HpState,
                     s.Attacker.Cp))), LogLevel.Gym, ConsoleColor.Yellow);
 
+
+
                 //await Task.Delay(2000).ConfigureAwait(false);
                 List<BattleAction> battleActions = new List<BattleAction>();
 
@@ -1577,6 +1579,23 @@ namespace PoGo.NecroBot.Logic.Tasks
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

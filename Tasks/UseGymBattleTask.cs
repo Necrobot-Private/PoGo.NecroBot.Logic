@@ -60,6 +60,13 @@ namespace PoGo.NecroBot.Logic.Tasks
             await Session.GymState.LoadMyPokemons(Session).ConfigureAwait(false);
 
             var distance = Session.Navigation.WalkStrategy.CalculateDistance(Session.Client.CurrentLatitude, Session.Client.CurrentLongitude, Gym.Latitude, Gym.Longitude);
+            var player = Session.Profile.PlayerData;
+
+            if (player.Team == TeamColor.Neutral)
+            {
+                Logger.Write($"No team selected yet.. Gym battle functions are disabled.", LogLevel.Gym, ConsoleColor.White);
+                return;
+            }
 
             if (GymInfo != null)
             {
@@ -71,7 +78,6 @@ namespace PoGo.NecroBot.Logic.Tasks
                     Longitude = GymInfo.Longitude
                 });
 
-                var player = Session.Profile.PlayerData;
                 await EnsureJoinTeam(player).ConfigureAwait(false);
 
                 Session.EventDispatcher.Send(new GymDetailInfoEvent()

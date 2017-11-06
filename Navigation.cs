@@ -20,7 +20,6 @@ using System.Threading.Tasks;
 namespace PoGo.NecroBot.Logic
 {
     public delegate void UpdatePositionDelegate(ISession session, double lat, double lng, double speed);
-    public delegate void GetRouteDelegate(List<GeoCoordinate> points);
 
     public class Navigation
     {
@@ -33,6 +32,7 @@ namespace PoGo.NecroBot.Logic
 
         private bool _GoogleWalk, _MapZenWalk, _YoursWalk, _AutoWalkAI;
         private double distance;
+        //private int speedChangeFactor = 1;
         private int _AutoWalkDist;
 
         public Navigation(Client client, ILogicSettings logicSettings)
@@ -45,6 +45,45 @@ namespace PoGo.NecroBot.Logic
 
         public double VariantRandom(ISession session, double currentSpeed)
         {
+            /*
+             * this changes as bug into BaseWalkStrategy
+             * 
+            double variantSpeed = session.LogicSettings.WalkingSpeedVariant;
+            if (variantSpeed == 0.0)
+                return currentSpeed;
+
+            double baseSpeed = session.LogicSettings.WalkingSpeedInKilometerPerHour;
+            // Between -1.0 and 1.0 the current deviation from baseSpeed
+            double currentVariantFactor = (currentSpeed - baseSpeed) / variantSpeed;
+
+            // The more speed is changing towards limit, the more it is likely that speed change direction changes 
+            if (WalkingRandom.Next(1, 10) > 8
+                || (currentVariantFactor * speedChangeFactor > 0.0
+                    && WalkingRandom.NextDouble() + Math.Abs(currentVariantFactor) > 1.50))
+                // Change from slow down to speed up or vice versa
+                speedChangeFactor *= -1;
+
+            // This is the max. delta for each speed change
+            double newSpeed = currentSpeed + WalkingRandom.NextDouble() * variantSpeed * speedChangeFactor;
+
+            var max = baseSpeed + variantSpeed;
+            var min = baseSpeed - variantSpeed;
+
+            if (newSpeed > max)
+                newSpeed -= newSpeed - max;
+            if (newSpeed < min)
+                newSpeed += min - newSpeed;
+
+            if (Math.Round(newSpeed, 2) != Math.Round(currentSpeed, 2))
+            {
+                session.EventDispatcher.Send(new HumanWalkingEvent
+                {
+                    OldWalkingSpeed = currentSpeed,
+                    CurrentWalkingSpeed = newSpeed
+                });
+            }
+            return newSpeed;
+            */
             if (WalkingRandom.Next(1, 10) > 5)
             {
                 if (WalkingRandom.Next(1, 10) > 5)
@@ -113,42 +152,46 @@ namespace PoGo.NecroBot.Logic
         private void InitializeWalkStrategies(ILogicSettings logicSettings)
         {
             //AutoWalkAI code
-            _YoursWalk = logicSettings.UseYoursWalk;
-            _MapZenWalk = logicSettings.UseMapzenWalk;
-            _GoogleWalk = logicSettings.UseGoogleWalk;
-
             _AutoWalkAI = logicSettings.AutoWalkAI;
             _AutoWalkDist = logicSettings.AutoWalkDist;
 
             if (_AutoWalkAI)
             {
-                if (distance > 15)
+                _YoursWalk = false; _GoogleWalk = false; _MapZenWalk = false;
+
+                if (distance >= _AutoWalkDist)
                 {
-                    _YoursWalk = false; _MapZenWalk = false; _GoogleWalk = false;
-                    if (distance >= _AutoWalkDist)
+                    if (logicSettings.GoogleApiKey != "")
                     {
-                        if (_GoogleWalk && logicSettings.GoogleApiKey != "")
-                        {
-                            Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, using 'Google Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
-                            _GoogleWalk = true;
-                        }
-                        else if (_MapZenWalk && logicSettings.MapzenTurnByTurnApiKey != "")
-                        {
-                            Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, using 'Mapzen Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
-                            _MapZenWalk = true;
-                        }
-                        else if (_YoursWalk)
-                        {
-                            Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, switching to 'YoursWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
-                            _YoursWalk = true;
-                        }
+                        Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, using 'Google Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        _GoogleWalk = true;
+                    }
+                    else if (logicSettings.MapzenTurnByTurnApiKey != "")
+                    {
+                        Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, using 'Mapzen Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        _MapZenWalk = true;
+                    }
+                    else if (logicSettings.UseYoursWalk)
+                    {
+                        Logging.Logger.Write($"Distance to travel is > {_AutoWalkDist}m, using 'Yours Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                        _YoursWalk = true;
                     }
                     else
                     {
-                        Logging.Logger.Write($"Distance to travel is < {_AutoWalkDist}m, using 'YoursWalk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
-                        _YoursWalk = true;
+                        Logging.Logger.Write($"No Base walk strategy enabled, using 'NecroBot Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
                     }
                 }
+                else if (distance > 15)
+                {
+                    Logging.Logger.Write($"Distance to travel is < {_AutoWalkDist}m, using 'NecroBot Walk'", Logging.LogLevel.Info, ConsoleColor.DarkYellow);
+                }
+            }
+            else
+            {
+                //No AutoWalkAI strategy enabled, using 'NecroBot Config defaults'
+                _GoogleWalk = logicSettings.UseGoogleWalk;
+                _MapZenWalk = logicSettings.UseMapzenWalk;
+                _YoursWalk = logicSettings.UseYoursWalk;
             }
 
             WalkStrategyQueue = new List<IWalkStrategy>();
@@ -169,6 +212,7 @@ namespace PoGo.NecroBot.Logic
             if (_YoursWalk)
                 WalkStrategyQueue.Add(new YoursNavigationStrategy(_client));
 
+            // This is the NecroBot Walk default
             WalkStrategyQueue.Add(new HumanStrategy(_client));
         }
 

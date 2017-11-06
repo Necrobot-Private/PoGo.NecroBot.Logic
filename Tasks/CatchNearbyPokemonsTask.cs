@@ -63,9 +63,9 @@ namespace PoGo.NecroBot.Logic.Tasks
 
             var nearbyPokemons = await GetNearbyPokemons(session).ConfigureAwait(false);
 
-            Logger.Write($"There are {nearbyPokemons.Count()} pokemon nearby.", LogLevel.Debug);
-
             if (nearbyPokemons == null) return;
+
+            Logger.Write($"Spotted {nearbyPokemons.Count()} pokemon in the area. Trying to catch them all.", LogLevel.Debug);
 
             var priorityPokemon = nearbyPokemons.Where(p => p.PokemonId == priority).FirstOrDefault();
             var pokemons = nearbyPokemons.Where(p => p.PokemonId != priority).ToList();
@@ -91,26 +91,24 @@ namespace PoGo.NecroBot.Logic.Tasks
                     if (session.LogicSettings.TransferWeakPokemon)
                         await TransferWeakPokemonTask.Execute(session, cancellationToken).ConfigureAwait(false);
 
-                    if (session.LogicSettings.EvolveAllPokemonAboveIv ||
-                        session.LogicSettings.EvolveAllPokemonWithEnoughCandy ||
-                        session.LogicSettings.UseLuckyEggsWhileEvolving ||
-                        session.LogicSettings.KeepPokemonsThatCanEvolve)
-                    {
+                    if (EvolvePokemonTask.IsActivated(session))
                         await EvolvePokemonTask.Execute(session, cancellationToken).ConfigureAwait(false);
-                    }
                 }
             }
 
             var allitems = await session.Inventory.GetItems().ConfigureAwait(false);
-            var pokeBallsCount = allitems.FirstOrDefault(i => i.ItemId == ItemId.ItemPokeBall)?.Count;
-            var greatBallsCount = allitems.FirstOrDefault(i => i.ItemId == ItemId.ItemGreatBall)?.Count;
-            var ultraBallsCount = allitems.FirstOrDefault(i => i.ItemId == ItemId.ItemUltraBall)?.Count;
-            var masterBallsCount = allitems.FirstOrDefault(i => i.ItemId == ItemId.ItemMasterBall)?.Count;
-            masterBallsCount = masterBallsCount ?? 0; //return null ATM. need this code to logic check work
+            var pokeBallsCount = allitems.FirstOrDefault(i => i.ItemId == ItemId.ItemPokeBall)?.Count ?? 0;
+            var greatBallsCount = allitems.FirstOrDefault(i => i.ItemId == ItemId.ItemGreatBall)?.Count ?? 0;
+            var ultraBallsCount = allitems.FirstOrDefault(i => i.ItemId == ItemId.ItemUltraBall)?.Count ?? 0;
+            var masterBallsCount = allitems.FirstOrDefault(i => i.ItemId == ItemId.ItemMasterBall)?.Count ?? 0;
+            //masterBallsCount = masterBallsCount ?? 0; //return null ATM. need this code to logic check work
             var PokeBalls = pokeBallsCount + greatBallsCount + ultraBallsCount + masterBallsCount;
 
-            if (0 < pokemons.Count && PokeBalls >= session.LogicSettings.PokeballsToKeepForSnipe) // Don't display if not enough Pokeballs - TheWizrad1328
-                Logger.Write($"Catching {pokemons.Count} Pokemon Nearby...", LogLevel.Info);
+            if (pokemons.Count > 0)
+                if (PokeBalls >= session.LogicSettings.PokeballsToKeepForSnipe)  // Don't display if not enough Pokeballs - TheWizrad1328
+                  Logger.Write($"Catching {pokemons.Count} Pokemon Nearby...", LogLevel.Info);
+              else
+                  Logger.Write($"collecting {session.LogicSettings.PokeballsToKeepForSnipe - PokeBalls} more Pokeballs. Catching of pokemon is temporarily susspended...", LogLevel.Info);
 
             foreach (var pokemon in pokemons)
             {
@@ -187,13 +185,8 @@ namespace PoGo.NecroBot.Logic.Tasks
                             await TransferDuplicatePokemonTask.Execute(session, cancellationToken).ConfigureAwait(false);
                         if (session.LogicSettings.TransferWeakPokemon)
                             await TransferWeakPokemonTask.Execute(session, cancellationToken).ConfigureAwait(false);
-                        if (session.LogicSettings.EvolveAllPokemonAboveIv ||
-                            session.LogicSettings.EvolveAllPokemonWithEnoughCandy ||
-                            session.LogicSettings.UseLuckyEggsWhileEvolving ||
-                            session.LogicSettings.KeepPokemonsThatCanEvolve)
-                        {
+                        if (EvolvePokemonTask.IsActivated(session))
                             await EvolvePokemonTask.Execute(session, cancellationToken).ConfigureAwait(false);
-                        }
                     }
                     else
                         session.EventDispatcher.Send(new WarnEvent

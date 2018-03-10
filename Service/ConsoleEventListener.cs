@@ -181,8 +181,10 @@ namespace PoGo.NecroBot.Logic.Service
         {
             Logger.Write(eggIncubatorStatusEvent.WasAddedNow
                     ? session.Translation.GetTranslation(TranslationString.IncubatorPuttingEgg,
+                        eggIncubatorStatusEvent.Eggs,
                         eggIncubatorStatusEvent.KmToWalk.ToString("0.00").PadLeft(5))
                     : session.Translation.GetTranslation(TranslationString.IncubatorStatusUpdate,
+                        eggIncubatorStatusEvent.Eggs,
                         eggIncubatorStatusEvent.KmRemaining.ToString("0.00").PadLeft(5),
                         eggIncubatorStatusEvent.KmToWalk.ToString("0.00").PadLeft(5)),
                 LogLevel.Egg);
@@ -261,6 +263,9 @@ namespace PoGo.NecroBot.Logic.Service
                 Logger.Write(
                     session.Translation.GetTranslation(TranslationString.SoftBanBypassed),
                     LogLevel.SoftBan, ConsoleColor.Green);
+
+                if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification)
+                    PushNotificationClient.SendNotification(session, "Soft Ban", "Successfully bypassed!", true).ConfigureAwait(false);
             }
             else
             {

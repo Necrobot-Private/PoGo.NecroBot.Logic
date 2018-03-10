@@ -161,7 +161,7 @@ namespace PoGo.NecroBot.Logic.State
         {
             KnownLatitudeBeforeSnipe = 0;
             KnownLongitudeBeforeSnipe = 0;
-            if(GlobalSettings.Auth.DeviceConfig.UseRandomDeviceId)
+            if (GlobalSettings.Auth.DeviceConfig.UseRandomDeviceId)
             {
                 settings.DeviceId = DeviceConfig.GetDeviceId(settings.Username);
                 Logger.Debug($"Username : {Settings.Username} , Device ID :{Settings.DeviceId}");
@@ -212,10 +212,12 @@ namespace PoGo.NecroBot.Logic.State
             Logger.Write($"Account changed to {Account}", LogLevel.BotStats);
 
             if (session.LogicSettings.NotificationConfig.EnablePushBulletNotification)
-                PushNotificationClient.SendNotification(session, $"Account changed to", $"{Account}\n" +
+                PushNotificationClient.SendNotification(session, $"Account change:", 
+                                                                 $"Acc: {Account}\n" +
                                                                  $"Lvl: {Lvl}\n" +
                                                                  $"XP : {XP:#,##0} ({(double)XP / ((double)NLevelXP) * 100:#0.00}%)\n" +
-                                                                 $"SD : {SD:#,##0}", true).ConfigureAwait(false);
+                                                                 $"SD : {SD:#,##0}\n" +
+                                                                 $"RT : {nextBot.RuntimeTotal:00:00}", true).ConfigureAwait(false);
 
 #if DEBUG
             Thread.Sleep(1000); //Pauses execution for 1 sec. Personal use for TheWizard. I need a 1 sec gap between this and next logger line.

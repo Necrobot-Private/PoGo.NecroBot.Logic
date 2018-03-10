@@ -55,7 +55,6 @@ namespace PoGo.NecroBot.Logic
                     {
                         item.IsRunning = 0;
                         item.LastRuntimeUpdatedAt = null;
-                        item.RuntimeTotal = 0;
                     }
                     _context.SaveChanges();
                 }
@@ -92,11 +91,12 @@ namespace PoGo.NecroBot.Logic
             if (runningAccount != null)
             {
                 runningAccount.IsRunning = 0;
-                var now = DateTime.Now;
 
                 if (runningAccount.LastRuntimeUpdatedAt.HasValue)
-                    runningAccount.RuntimeTotal += (now - TimeUtil.GetDateTimeFromMilliseconds(runningAccount.LastRuntimeUpdatedAt.Value)).TotalMinutes;
-                runningAccount.LastRuntimeUpdatedAt = now.ToUnixTime();
+                {
+                    runningAccount.RuntimeTotal = (int)runningAccount.RuntimeTotal; //+= (now - TimeUtil.GetDateTimeFromMilliseconds(runningAccount.LastRuntimeUpdatedAt.Value)).TotalMinutes;
+                    runningAccount.LastRuntimeUpdatedAt = DateTime.Now.ToUnixTime();
+                }
                 UpdateLocalAccount(runningAccount);
             }
 
@@ -139,7 +139,7 @@ namespace PoGo.NecroBot.Logic
                 foreach (var item in _context.Account.OrderBy(p => p.Id))
                 {
                     item.IsRunning = 0;
-                    item.RuntimeTotal = 0;
+                _context.SaveChanges();
                     UpdateLocalAccount(item);
                 }
             }
@@ -191,7 +191,7 @@ namespace PoGo.NecroBot.Logic
                         _context.Account.Add(newAcc);
                         _context.SaveChanges();
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
                         Logic.Logging.Logger.Write($"Error while saving data into {ACCOUNT_DB_NAME}, please delete {ACCOUNT_DB_NAME} and restart bot to have it fully work in order");
                     }
@@ -235,7 +235,7 @@ namespace PoGo.NecroBot.Logic
             if (ignoreBlockCheck)
                 return _context.Account.OrderByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).Where(a => a.AccountActive == true).LastOrDefault();
             else
-                return _context.Account.OrderByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).ThenBy(x => x.RuntimeTotal).Where(x => x != null && x.ReleaseBlockTime.HasValue && x.ReleaseBlockTime < DateTime.Now.ToUnixTime()).LastOrDefault();
+                return _context.Account.OrderByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).ThenBy(x => x.RuntimeTotal).Where(x => x != null && x.ReleaseBlockTime.HasValue && x.ReleaseBlockTime < DateTime.Now.ToUnixTime()).Last();
         }
 
         public bool AllowMultipleBot()
@@ -386,24 +386,32 @@ namespace PoGo.NecroBot.Logic
 
             int acnt = 0;
 
-            foreach (var item in Accounts.OrderByDescending(p => p.Level).ThenByDescending(p => p.CurrentXp))
+            foreach (var item in Accounts.OrderByDescending(p => p.AccountActive).ThenByDescending(p => p.Level).ThenByDescending(p => p.CurrentXp))
             {
                 user = string.IsNullOrEmpty(item.Nickname) ? item.Username : item.Nickname;
                 acnt = acnt + 1;
+                if (item.RuntimeTotal == null) { item.RuntimeTotal = 0.0; }
+                int M = (int)item.RuntimeTotal;
+                int H = 0;
+                if (M >= 60) { H = (int)(M / 60); M = M - H * 60; }
+                string RT = "  :  ";
+                if (item.RuntimeTotal > 0) { RT = $"{H.ToString("00")}:{ M.ToString("00")}"; } //:{S.ToString("00")}"; }
+                if (item.LastLogin == "Failure") { item.AccountActive = false; }
+                //if (((DateTime.Now.TimeOfDay.TotalMilliseconds - item.LastLoginTimestamp.Value) / 86400) >= 14) { item.AccountActive = false; }
 
                 if (item.Level > 0)
                 {
                     if (item.AccountActive)
-                        Logger.Write($"{acnt,2}) {user.PadRight(maxL)} | Lvl: {item.Level,2:#0} | XP: {item.CurrentXp,8:0} ({(int)((double)item.CurrentXp.Value / (double)item.NextLevelXp.Value * 100),2:#0}%) | SD: {item.Stardust,8:0} | Runtime: {item.RuntimeTotal:00:00}", LogLevel.BotStats);
+                        Logger.Write($"{acnt,2}) {user.PadRight(maxL)} | Lvl: {item.Level,2:#0} | XP: {item.CurrentXp,8:0} ({(int)((double)item.CurrentXp.Value / item.NextLevelXp.Value * 100),2:#0}%) | SD: {item.Stardust,8:0} | Runtime: {RT} | Last Login: {TimeUtil.GetDateTimeFromMilliseconds(item.LastLoginTimestamp.Value).ToLocalTime().ToString("MMM dd-HH:mm")}", LogLevel.BotStats);
                     else
-                        Logger.Write($"{acnt,2}) {user.PadRight(maxL)} | Lvl: {item.Level,2:#0} | XP: {item.CurrentXp,8:0} ({(int)((double)item.CurrentXp.Value / (double)item.NextLevelXp.Value * 100),2:#0}%) | SD: {item.Stardust,8:0} | Runtime: {item.RuntimeTotal:00:00}", LogLevel.BotStats, ConsoleColor.Red);
+                        Logger.Write($"{acnt,2})-{user.PadRight(maxL)} | Lvl: {item.Level,2:#0} | XP: {item.CurrentXp,8:0} ({(int)((double)item.CurrentXp.Value / item.NextLevelXp.Value * 100),2:#0}%) | SD: {item.Stardust,8:0} | Runtime: {RT} | Last Login: {TimeUtil.GetDateTimeFromMilliseconds(item.LastLoginTimestamp.Value).ToLocalTime().ToString("MMM dd-HH:mm")}", LogLevel.BotStats, ConsoleColor.Red);
                 }
                 else
                 {
                     if (item.AccountActive)
-                        Logger.Write($"{acnt,2}) {user.PadRight(maxL)} | Lvl: ?? | XP:        0 ( 0%) | SD:        0 | Runtime: {item.RuntimeTotal:00:00}", LogLevel.BotStats, ConsoleColor.Yellow);
+                        Logger.Write($"{acnt,2}) {user.PadRight(maxL)} | Lvl: ?? | XP:        0 ( 0%) | SD:        0 | Runtime:   :   | Last Login: N/A", LogLevel.BotStats, ConsoleColor.Yellow);
                     else
-                        Logger.Write($"{acnt,2}) {user.PadRight(maxL)} | Lvl: ?? | XP:        0 ( 0%) | SD:        0 | Runtime: {item.RuntimeTotal:00:00}", LogLevel.BotStats, ConsoleColor.Red);
+                        Logger.Write($"{acnt,2})-{user.PadRight(maxL)} | Lvl: ?? | XP:        0 ( 0%) | SD:        0 | Runtime:   :   | Last Login: N/A", LogLevel.BotStats, ConsoleColor.Red);
                 }
             }
         }
@@ -438,9 +446,10 @@ namespace PoGo.NecroBot.Logic
             account.PrevLevelXp = stat.StatsExport.PreviousXp - stat.StatsExport.LevelXp;
             var now = DateTime.Now;
             if (account.LastRuntimeUpdatedAt.HasValue)
+            {
                 account.RuntimeTotal += (now - TimeUtil.GetDateTimeFromMilliseconds(account.LastRuntimeUpdatedAt.Value)).TotalMinutes;
-            account.LastRuntimeUpdatedAt = now.ToUnixTime();
-
+                account.LastRuntimeUpdatedAt = now.ToUnixTime();
+            }
             UpdateLocalAccount(account);
         }
     }

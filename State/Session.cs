@@ -110,7 +110,9 @@ namespace PoGo.NecroBot.Logic.State
                     AutoExitBotIfAccountFlagged = settings.AutoExitBotIfAccountFlagged,
                     AccountLatitude = settings.AccountLatitude,
                     AccountLongitude = settings.AccountLongitude,
-                    AccountActive = settings.AccountActive
+                    AccountActive = settings.AccountActive,
+                    RunStart = settings.RunStart,
+                    RunEnd= settings.RunEnd,
                 });
             }
             if (File.Exists("runtime.log"))
@@ -168,12 +170,49 @@ namespace PoGo.NecroBot.Logic.State
             }
             Client = new Client(settings);
             // ferox wants us to set this manually
-            Inventory = new Inventory(this, Client, logicSettings, async () =>
+
+            var inv = new Inventory(this, Client , logicSettings, null);
+            try
             {
-                var candy = (await Inventory.GetPokemonFamilies().ConfigureAwait(false)).ToList();
-                var pokemonSettings = (await Inventory.GetPokemonSettings().ConfigureAwait(false)).ToList();
-                EventDispatcher.Send(new InventoryRefreshedEvent(null, pokemonSettings, candy));
-            });
+                inv = new Inventory(this, Client, logicSettings, async () =>
+                {
+                    var candy = (await Inventory.GetPokemonFamilies().ConfigureAwait(false)).ToList();
+                    try
+                    {
+                        candy = (await Inventory.GetPokemonFamilies().ConfigureAwait(false)).ToList();
+                    }
+                    catch
+                    {
+#if DEBUG
+                        var OldNot = TinyIoCContainer.Current.Resolve<ISession>().LogicSettings.NotificationConfig.EnablePushBulletNotification;
+                        TinyIoCContainer.Current.Resolve<ISession>().LogicSettings.NotificationConfig.EnablePushBulletNotification = true;
+                        await PushNotificationClient.SendNotification(TinyIoCContainer.Current.Resolve<ISession>(), $"Candy ERROR.", $"Check your code.", true).ConfigureAwait(false);
+                        TinyIoCContainer.Current.Resolve<ISession>().LogicSettings.NotificationConfig.EnablePushBulletNotification = OldNot;
+#endif
+                    }
+                    var pokemonSettings = (await Inventory.GetPokemonSettings().ConfigureAwait(false)).ToList();
+                    EventDispatcher.Send(new InventoryRefreshedEvent(null, pokemonSettings, candy));
+                });
+            }
+            catch
+            {
+#if DEBUG
+                var OldNot = TinyIoCContainer.Current.Resolve<ISession>().LogicSettings.NotificationConfig.EnablePushBulletNotification;
+                TinyIoCContainer.Current.Resolve<ISession>().LogicSettings.NotificationConfig.EnablePushBulletNotification = true;
+                PushNotificationClient.SendNotification(TinyIoCContainer.Current.Resolve<ISession>(), $"Candy ERROR.", $"Check your code.", true).ConfigureAwait(false);
+                TinyIoCContainer.Current.Resolve<ISession>().LogicSettings.NotificationConfig.EnablePushBulletNotification = OldNot;
+#endif
+                // Null
+            }
+            Inventory = inv;
+
+            //Inventory = new Inventory(this, Client, logicSettings, async () =>
+            //{
+            //    var candy = (await Inventory.GetPokemonFamilies().ConfigureAwait(false)).ToList();
+            //    var pokemonSettings = (await Inventory.GetPokemonSettings().ConfigureAwait(false)).ToList();
+            //    EventDispatcher.Send(new InventoryRefreshedEvent(null, pokemonSettings, candy));
+            //});
+
             Navigation = new Navigation(Client, logicSettings);
             Navigation.WalkStrategy.UpdatePositionEvent +=
                 (session, lat, lng,s) => EventDispatcher.Send(new UpdatePositionEvent {Latitude = lat, Longitude = lng, Speed = s});

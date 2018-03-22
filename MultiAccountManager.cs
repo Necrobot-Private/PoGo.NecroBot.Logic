@@ -113,6 +113,8 @@ namespace PoGo.NecroBot.Logic
             _globalSettings.Auth.CurrentAuthConfig.AccountLatitude = newAccount.AccountLatitude;
             _globalSettings.Auth.CurrentAuthConfig.AccountLongitude = newAccount.AccountLongitude;
             _globalSettings.Auth.CurrentAuthConfig.AccountActive = newAccount.AccountActive;
+            _globalSettings.Auth.CurrentAuthConfig.RunStart = newAccount.RunStart;
+            _globalSettings.Auth.CurrentAuthConfig.RunEnd = newAccount.RunEnd;
 
             string body = "";
             foreach (var item in Accounts)
@@ -139,9 +141,9 @@ namespace PoGo.NecroBot.Logic
                 foreach (var item in _context.Account.OrderBy(p => p.Id))
                 {
                     item.IsRunning = 0;
-                _context.SaveChanges();
                     UpdateLocalAccount(item);
                 }
+                _context.SaveChanges();
             }
         }
 
@@ -205,6 +207,8 @@ namespace PoGo.NecroBot.Logic
                     existing.AccountLatitude = authConfig.AccountLatitude;
                     existing.AccountLongitude = authConfig.AccountLongitude;
                     existing.AccountActive = authConfig.AccountActive;
+                    existing.RunStart = authConfig.RunStart;
+                    existing.RunEnd = authConfig.RunEnd;
                     _context.SaveChanges();
                 }
             }
@@ -233,7 +237,7 @@ namespace PoGo.NecroBot.Logic
                 return null;
 
             if (ignoreBlockCheck)
-                return _context.Account.OrderByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).Where(a => a.AccountActive == true).LastOrDefault();
+                return _context.Account.OrderByDescending(x => x.RuntimeTotal).ThenByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).Where(a => a.AccountActive == true && a.LastLogin != "Failure" && DateTime.Now.TimeOfDay.TotalSeconds >= a.RunStart && DateTime.Now.TimeOfDay.TotalSeconds <= a.RunEnd).Last();
             else
                 return _context.Account.OrderByDescending(x => x.Level).ThenByDescending(x => x.CurrentXp).ThenBy(x => x.RuntimeTotal).Where(x => x != null && x.ReleaseBlockTime.HasValue && x.ReleaseBlockTime < DateTime.Now.ToUnixTime()).Last();
         }
@@ -293,7 +297,7 @@ namespace PoGo.NecroBot.Logic
 
             if (_context.Account.Count() > 0)
             {
-                var runnableAccount = _context.Account.OrderByDescending(p => p.Level).ThenByDescending(p => p.CurrentXp).Where(a => a.AccountActive == true).LastOrDefault(); //_context.Account.OrderByDescending(x => x.RuntimeTotal).ThenByDescending(p => p.Level).ThenByDescending(p => p.CurrentXp).LastOrDefault(p => p != currentAccount && p.AccountActive == true);
+                var runnableAccount = _context.Account.OrderByDescending(p => p.RuntimeTotal).ThenByDescending(p => p.Level).ThenByDescending(p => p.CurrentXp).Where(a => a != currentAccount && a.AccountActive == true && a.LastLogin != "Failure" && DateTime.Now.TimeOfDay.TotalSeconds >= a.RunStart && DateTime.Now.TimeOfDay.TotalSeconds <= a.RunEnd).LastOrDefault();
 
                 if (runnableAccount != null)
                     return runnableAccount;
@@ -395,20 +399,20 @@ namespace PoGo.NecroBot.Logic
                 int H = 0;
                 if (M >= 60) { H = (int)(M / 60); M = M - H * 60; }
                 string RT = "  :  ";
-                if (item.RuntimeTotal > 0) { RT = $"{H.ToString("00")}:{ M.ToString("00")}"; } //:{S.ToString("00")}"; }
+                if (item.RuntimeTotal > 0) { RT = $"{H.ToString("00")}:{ M.ToString("00")}"; } 
                 if (item.LastLogin == "Failure") { item.AccountActive = false; }
                 //if (((DateTime.Now.TimeOfDay.TotalMilliseconds - item.LastLoginTimestamp.Value) / 86400) >= 14) { item.AccountActive = false; }
 
                 if (item.Level > 0)
                 {
-                    if (item.AccountActive)
+                    if (item.AccountActive && DateTime.Now.TimeOfDay.TotalSeconds >= item.RunStart && DateTime.Now.TimeOfDay.TotalSeconds <= item.RunEnd)
                         Logger.Write($"{acnt,2}) {user.PadRight(maxL)} | Lvl: {item.Level,2:#0} | XP: {item.CurrentXp,8:0} ({(int)((double)item.CurrentXp.Value / item.NextLevelXp.Value * 100),2:#0}%) | SD: {item.Stardust,8:0} | Runtime: {RT} | Last Login: {TimeUtil.GetDateTimeFromMilliseconds(item.LastLoginTimestamp.Value).ToLocalTime().ToString("MMM dd-HH:mm")}", LogLevel.BotStats);
                     else
                         Logger.Write($"{acnt,2})-{user.PadRight(maxL)} | Lvl: {item.Level,2:#0} | XP: {item.CurrentXp,8:0} ({(int)((double)item.CurrentXp.Value / item.NextLevelXp.Value * 100),2:#0}%) | SD: {item.Stardust,8:0} | Runtime: {RT} | Last Login: {TimeUtil.GetDateTimeFromMilliseconds(item.LastLoginTimestamp.Value).ToLocalTime().ToString("MMM dd-HH:mm")}", LogLevel.BotStats, ConsoleColor.Red);
                 }
                 else
                 {
-                    if (item.AccountActive)
+                    if (item.AccountActive && DateTime.Now.TimeOfDay.TotalSeconds >= item.RunStart && DateTime.Now.TimeOfDay.TotalSeconds <= item.RunEnd)
                         Logger.Write($"{acnt,2}) {user.PadRight(maxL)} | Lvl: ?? | XP:        0 ( 0%) | SD:        0 | Runtime:   :   | Last Login: N/A", LogLevel.BotStats, ConsoleColor.Yellow);
                     else
                         Logger.Write($"{acnt,2})-{user.PadRight(maxL)} | Lvl: ?? | XP:        0 ( 0%) | SD:        0 | Runtime:   :   | Last Login: N/A", LogLevel.BotStats, ConsoleColor.Red);

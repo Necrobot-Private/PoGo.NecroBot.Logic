@@ -775,24 +775,6 @@ namespace PoGo.NecroBot.Logic
             return branch.CandyCost;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         public async Task<bool> CanEvolvePokemon(PokemonData pokemon, EvolveFilter appliedFilter = null, bool checkEvolveFilterRequirements = false)
         {
             // Can't evolve pokemon null.
@@ -806,18 +788,11 @@ namespace PoGo.NecroBot.Logic
             IEnumerable<PokemonSettings> pokemonSettings = await GetPokemonSettings().ConfigureAwait(false);
             var settings = pokemonSettings.FirstOrDefault(x => x.PokemonId == pokemon.PokemonId);
 
-
-
-
-
-
-
             // Can't evolve pokemon that are not evolvable.
             if (settings == null || settings.EvolutionIds.Count == 0 && settings.EvolutionBranch.Count == 0)
                 return false;
 
             int familyCandy = await GetCandyCount(pokemon.PokemonId).ConfigureAwait(false);
-
 
             if (checkEvolveFilterRequirements
                 && !IsEvolveByGlobalIvFilter(pokemon)
@@ -862,9 +837,6 @@ namespace PoGo.NecroBot.Logic
 
                     if (familyCandy < branch.CandyCost)
                         continue;  // Cannot evolve so check next branch
-
-
-
 
                     // If we got here, then we can evolve so break out of loop.
                     canEvolve = true;

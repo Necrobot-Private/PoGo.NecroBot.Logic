@@ -256,6 +256,8 @@ namespace PoGo.NecroBot.Logic.Tasks
                     return gyms.FirstOrDefault();
             }
 
+            //Need observation 
+            /*
             Random RndFort = new Random((int)DateTime.Now.Ticks);
             int R = 10; if (forts.Count < R) { R = forts.Count; }
 
@@ -265,11 +267,12 @@ namespace PoGo.NecroBot.Logic.Tasks
                 Logger.Debug($"Total Pokestops: {forts.Count} | Rnd Stop Chosen: {RndF}");
 
                 return forts[RndF - 1];
-            }
+            } 
             else
             {
+            */
                 return forts.FirstOrDefault();
-            }
+            //}
         }
 
         public static async Task SpinPokestopNearBy(ISession session, CancellationToken cancellationToken, FortData destinationFort = null)
